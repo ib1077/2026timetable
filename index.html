@@ -1,170 +1,297 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>智頭急行 時刻表ビューア</title>
-<style>
-body{font-family:sans-serif;margin:0;background:#f9f9f9}
-/* 上部の切り替えバー */
-.nav-bar{display:flex;align-items:center;background:#007bff;padding:10px;position:sticky;top:0;z-index:10;box-shadow:0 2px 5px rgba(0,0,0,0.2)}
-h2{margin:0;color:#fff;font-size:16px;flex-grow:1}
-.btn-group{display:flex;gap:5px}
-button{background:#fff;border:none;padding:6px 12px;font-size:12px;font-weight:bold;border-radius:4px;cursor:pointer;color:#007bff}
-button.active{background:#ffc107;color:#000}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>智頭急行 時刻表 PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        /* --- 1. スマホ最適化 & 基本リセット --- */
+        :root {
+            --header-bg: #1e3a8a;
+            --header-text: #ffffff;
+            --station-bg: #f1f5f9;
+            --border-color: #cbd5e1;
+            /* 列車種別ごとの優しい背景色（縦一列用） */
+            --bg-hakuto: #ffe4e6; /* 薄いピンク */
+            --bg-inaba: #fef3c7;  /* 薄いオレンジ/黄色 */
+            --bg-local: #dbeafe;  /* 薄い青 */
+            --bg-default: #ffffff;
+        }
 
-/* スクロール領域 */
-.wrap{overflow:auto;height:calc(100vh - 45px);background:#fff}
-table{border-collapse:separate;border-spacing:0;font-size:12px}
-th,td{border-right:1px solid #ccc;border-bottom:1px solid #ccc;padding:4px 8px;white-space:nowrap;text-align:center}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-/* 縦スクロール時に上の見出し（5行分）を最上部に固定 */
-tr:nth-child(-n+5) th {
-  position: sticky;
-  background: #e9e9e9;
-  z-index: 2;
-}
-tr:nth-child(1) th { top: 0; }
-tr:nth-child(2) th { top: 23px; }
-tr:nth-child(3) th { top: 62px; }
-tr:nth-child(4) th { top: 85px; }
-tr:nth-child(5) th { top: 108px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            font-size: 12px; /* スマホで見やすい小さめフォント */
+            overflow: hidden; /* 全体スクロールを防ぎ、テーブル内スクロールに */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-/* 横スクロール時に左の「駅名（1列目）」と「発着（2列目）」を左端に固定 */
-th:nth-child(1), td:nth-child(1) {
-  position: sticky;
-  left: 0;
-  background: #fff;
-  z-index: 1;
-  border-left: 1px solid #ccc;
-  text-align: left;
-}
-th:nth-child(2), td:nth-child(2) {
-  position: sticky;
-  left: 55px;
-  background: #fff;
-  z-index: 1;
-  text-align: left;
-}
+        /* アプリヘッダー */
+        header {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            padding: 8px 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
 
-/* 左上角の見出し交差点部分の重なり順を一番上にする */
-tr:nth-child(-n+5) th:nth-child(-n+2) {
-  z-index: 3;
-  background: #e9e9e9;
-}
-</style>
+        /* コントロール UI (上下線切り替えボタン) */
+        .controls {
+            display: flex;
+            background: #e2e8f0;
+            padding: 6px;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background-color: #ffffff;
+            color: #475569;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn.active {
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+
+        /* テーブルコンテナ（ここがスクロールする） */
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+            -webkit-overflow-scrolling: touch; /* iOSのスムーズスクロール */
+        }
+
+        /* --- 3. 列車番号・駅名の完全追従固定 (CSS Sticky) --- */
+        table {
+            border-collapse: separate; /* stickyを正常に動かすため別々に */
+            border-spacing: 0;
+            width: max-content; /* コンテンツ幅に合わせる */
+            min-width: 100%;
+        }
+
+        th, td {
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 6px 8px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* ヘッダー行 (1〜5行目) の一括固定設定 */
+        .thead-sticky th {
+            position: sticky;
+            background-color: #f1f5f9;
+            z-index: 10;
+        }
+
+        /* 縦スクロール時に上部にピタッと固定するピクセル数計算 */
+        .row-h0 th { top: 0; z-index: 12; }   /* 方面 */
+        .row-h1 th { top: 25px; } /* 特急名 */
+        .row-h2 th { top: 50px; } /* 始発 */
+        .row-h3 th { top: 75px; } /* 終着 */
+        .row-h4 th { top: 100px; z-index: 12; } /* 列車番号 (ピタッと追随) */
+
+        /* 左側（駅名・発着）の横スクロール固定設定 */
+        table th:nth-child(1), table td:nth-child(1) {
+            position: sticky;
+            left: 0;
+            background-color: var(--station-bg);
+            z-index: 5;
+            font-weight: bold;
+            text-align: left;
+            border-right: 2px solid #94a3b8;
+        }
+        table th:nth-child(2), table td:nth-child(2) {
+            position: sticky;
+            left: 70px; /* 駅名の幅に応じて調整 */
+            background-color: var(--station-bg);
+            z-index: 5;
+            border-right: 2px solid #94a3b8;
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        /* 左上角（ヘッダーと駅名が交差するエリア）の最前面化 */
+        .thead-sticky th:nth-child(1),
+        .thead-sticky th:nth-child(2) {
+            z-index: 15;
+            background-color: #e2e8f0;
+        }
+
+        /* --- 2. 自動色付け用のスタイル定義 --- */
+        .col-hakuto { background-color: var(--bg-hakuto) !important; }
+        .col-inaba { background-color: var(--bg-inaba) !important; }
+        .col-local { background-color: var(--bg-local) !important; }
+        .col-default { background-color: var(--bg-default); }
+
+        /* 時刻セルの文字装飾 */
+        .time-cell {
+            font-variant-numeric: tabular-nums; /* 数字の幅を揃える */
+            font-weight: 500;
+        }
+        
+        /* 空白セル */
+        .empty-cell {
+            color: #cbd5e1;
+        }
+    </style>
 </head>
 <body>
 
-<div class="nav-bar">
-  <h2>智頭急行 時刻表</h2>
-  <div class="btn-group">
-    <button id="btn-up" class="active" onclick="switchDirection('up')">上り(大阪方面)</button>
-    <button id="btn-down" onclick="switchDirection('down')">下り(鳥取方面)</button>
-  </div>
-</div>
+    <header>智頭急行 時刻表</header>
 
-<div class="wrap">
-  <table id="timetable-table"><!-- データが自動挿入されます --></table>
-</div>
+    <div class="controls">
+        <button class="btn active" id="btn-up" onclick="switchDirection('up')">上り (京都・大阪・岡山 方面)</button>
+        <button class="btn" id="btn-down" onclick="switchDirection('down')">下り (鳥取・倉吉 方面)</button>
+    </div>
 
-<script>
-let upRows = [];
-let downRows = [];
+    <div class="table-container">
+        <table id="timetable-table">
+            <thead id="table-head" class="thead-sticky"></thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
 
-// 時刻データを「時:分」の形に整形する関数（秒は切り捨て）
-function formatTimeValue(val) {
-  if (!val) return '';
-  
-  // 1. 「06:04:00」のような「時:分:秒」形式の処理
-  if (val.includes(':')) {
-    const parts = val.split(':');
-    if (parts.length >= 2) {
-      // 秒（parts[2]）を無視して「時:分」だけを結合
-      return parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
-    }
-  }
-  
-  // 2. 「604」や「1140」のようなコロンなしの数字の処理
-  if (/^\d{3,4}$/.test(val)) {
-    const min = val.slice(-2);          // 後ろの2桁（分）
-    const hour = val.slice(0, -2);       // 残りの前桁（時）
-    return hour.padStart(2, '0') + ':' + min;
-  }
-  
-  // 3. 列車番号や駅名、記号（↓や∥）はそのまま返す
-  return val;
-}
+    <script>
+        // 状態管理
+        let rawCsvData = [];
+        let currentDirection = 'up'; // 'up' または 'down'
 
-function parseCSV(text) {
-  const lines = text.split(/\r?\n/);
-  let currentDir = 'up';
-  
-  lines.forEach((line) => {
-    if (!line.trim()) return;
-    
-    if (line.includes('京都・大阪・岡山 方面')) { currentDir = 'up'; return; }
-    if (line.includes('鳥取・倉吉 方面')) { currentDir = 'down'; return; }
-    
-    const cells = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
-    
-    if (currentDir === 'up') { upRows.push(cells); } 
-    else { downRows.push(cells); }
-  });
-}
+        // サービスワーカーの登録 (PWA用)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Service Worker Registered'))
+                .catch(err => console.error('Service Worker Failed', err));
+        }
 
-function renderTable(rows) {
-  const table = document.getElementById('timetable-table');
-  table.innerHTML = '';
-  
-  rows.forEach((cells, index) => {
-    const tr = document.createElement('tr');
-    const isHeader = index < 5;
-    
-    cells.forEach((cellValue, cellIndex) => {
-      const cellType = isHeader ? 'th' : 'td';
-      const el = document.createElement(cellType);
-      let cleanText = cellValue.replace(/^"|"$/g, '').trim();
-      
-      // データ行（駅の時刻データ）かつ、駅名・発着列（1列目と2列目）以外なら時刻整形を行う
-      if (!isHeader && cellIndex >= 2) {
-        cleanText = formatTimeValue(cleanText);
-      }
-      
-      el.innerHTML = cleanText.replace(/\n/g, '<br>');
-      tr.appendChild(el);
-    });
-    table.appendChild(tr);
-  });
-}
+        // ページ読み込み時にCSVを取得
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch('timetable.csv')
+                .then(response => {
+                    if (!response.ok) throw new Error('CSVファイルの読み込みに失敗しました。');
+                    return response.arrayBuffer();
+                })
+                .then(buffer => {
+                    // UTF-8としてデコード（文字化け対策済）
+                    const decoder = new TextDecoder('utf-8');
+                    const text = decoder.decode(buffer);
+                    parseCSV(text);
+                })
+                .catch(error => {
+                    alert(error.message);
+                });
+        });
 
-function switchDirection(dir) {
-  document.getElementById('btn-up').classList.toggle('active', dir === 'up');
-  document.getElementById('btn-down').classList.toggle('active', dir === 'down');
-  renderTable(dir === 'up' ? upRows : downRows);
-  document.querySelector('.wrap').scrollTop = 0;
-  document.querySelector('.wrap').scrollLeft = 0;
-}
+        // CSVパース処理
+        function parseCSV(text) {
+            const lines = text.split(/\r\n|\n/);
+            rawCsvData = lines.map(line => {
+                // カンマ分割（クォーテーション内のカンマや改行を考慮する簡易パース）
+                // セル内改行は事前にスペース等に変換されている前提、または1行1データとして処理
+                return line.split(',').map(cell => cell.replace(/^"(.*)"$/, '$1').trim());
+            }).filter(row => row.length > 0 && row[0] !== "");
 
-fetch('timetable.csv')
-  .then(response => {
-    if (!response.ok) throw new Error('CSVファイルの読み込みに失敗しました');
-    return response.arrayBuffer();
-  })
-  .then(buffer => {
-    const decoder = new TextDecoder('utf-8'); // 💡ここを utf-8 に書き換えます
-    parseCSV(decoder.decode(buffer));
-    renderTable(upRows);
-  })
-  .catch(error => {
-    console.error(error);
-    alert('エラー: timetable.csv を読み込めませんでした。');
-  });
+            renderTimetable();
+        }
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js')
-    .then(() => console.log('PWA Service Worker Registered'));
-}
-</script>
-</body>
-</html>
+        // 全角英数字を半角に変換する関数 (4. 全角文字の自動修正)
+        function toHalfWidth(str) {
+            return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
+                return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+            });
+        }
+
+        // 時刻のフォーマット整形 (秒の削除、3〜4桁のコロン補完)
+        function formatTime(timeStr) {
+            if (!timeStr || timeStr === '-' || timeStr === '＝' || timeStr === '||') return '▼';
+            
+            // 全角を半角に
+            let clean = toHalfWidth(timeStr).trim();
+            
+            // 「06:04:00」などの秒付きデータを「06:04」に
+            if (clean.includes(':')) {
+                const parts = clean.split(':');
+                if (parts.length >= 2) {
+                    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+                }
+            }
+            
+            // 「604」や「1230」などの数字のみのデータを「06:04」「12:30」に
+            if (/^\d+$/.test(clean)) {
+                if (clean.length === 3) clean = '0' + clean;
+                if (clean.length === 4) {
+                    return `${clean.substring(0, 2)}:${clean.substring(2, 4)}`;
+                }
+            }
+            
+            return clean; // それ以外の文字列はそのまま返す
+        }
+
+        // 列の列車種別を判定してクラス名を返す関数 (2. 列の自動色付け)
+        function getTrainClass(trainName, trainNo) {
+            const name = trainName.toLowerCase();
+            const no = toHalfWidth(trainNo).toLowerCase();
+
+            if (name.includes('はくと') || no.includes('はくと')) {
+                return 'col-hakuto';
+            } else if (name.includes('いなば') || no.includes('いなば')) {
+                return 'col-inaba';
+            } else if (name.includes('普通') || no.includes('d') || !name) {
+                // 列車番号に「D」が含まれる、または普通表記
+                return 'col-local';
+            }
+            return 'col-default';
+        }
+
+        // 上下線の切り替えスイッチ
+        function switchDirection(dir) {
+            currentDirection = dir;
+            document.getElementById('btn-up').classList.toggle('active', dir === 'up');
+            document.getElementById('btn-down').classList.toggle('active', dir === 'down');
+            renderTimetable();
+        }
+
+        // 時刻表の描画処理
+        function renderTimetable() {
+            if (rawCsvData.length === 0) return;
+
+            // 1. 上り・下りのデータ境界線を判定
+            // CSV全体の行から、ヘッダーの特徴（「上り」「下り」等の文言）を探す
+            let upStartIndex = -1;
+            let downStartIndex = -1;
+
+            for (let i = 0; i < rawCsvData.length; i++) {
+                const firstCell = rawCsvData[i][0] || '';
+                if (upStartIndex === -1 && (firstCell.includes('上り') || rawCsvData[i].join('').includes('京都'))) {
+                    upStartIndex = i;
+                }
+                // 2つ目のヘッダー（下り）の開始位置を特定
+                if (i > upStartIndex + 5 && downStartIndex === -1 && (firstCell.includes('下り') || rawCsvData[i].join('').includes('鳥取'))) {
+                    downStartIndex = i;
+                    break;
