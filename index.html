@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>智頭急行 時刻表 PWA</title>
-    <link rel="manifest" href="manifest.json">
+    <!-- 【対策】キャッシュを強制的に更新させるためのクエリパラメータを追加 -->
+    <link rel="manifest" href="manifest.json?v=2026">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -15,9 +16,9 @@
             --header-text: #ffffff;
             --station-bg: #f1f5f9;
             --border-color: #cbd5e1;
-            --bg-hakuto: #ffe4e6; /* 薄いピンク */
-            --bg-inaba: #fef3c7;  /* 薄いオレンジ */
-            --bg-local: #dbeafe;  /* 薄い青 */
+            --bg-hakuto: #ffe4e6; /* 特急はくと：薄いピンク */
+            --bg-inaba: #fef3c7;  /* 特急いなば：薄いオレンジ */
+            --bg-local: #dbeafe;  /* 普通列車：薄い青 */
             --bg-default: #ffffff;
         }
 
@@ -25,10 +26,9 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            /* 全画面でロングタップによるテキスト選択やポップアップを禁止 */
-            -webkit-user-select: none; /* iOS Safari */
-            -webkit-touch-callout: none; /* iOS Safari 長押しメニュー */
-            user-select: none; /* 標準 */
+            -webkit-user-select: none; 
+            -webkit-touch-callout: none; 
+            user-select: none; 
         }
 
         body {
@@ -52,6 +52,7 @@
             flex-shrink: 0;
         }
 
+        /* --- ボタンのシンプル化と指定色への変更 --- */
         .controls {
             display: flex;
             background: #e2e8f0;
@@ -62,22 +63,32 @@
 
         .btn {
             flex: 1;
-            padding: 10px;
+            padding: 12px;
             border: none;
             border-radius: 6px;
-            background-color: #ffffff;
-            color: #475569;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transition: all 0.2s;
             -webkit-tap-highlight-color: transparent;
+            color: #475569;
+            background-color: #ffffff; /* 選択されていない時は白 */
+            opacity: 0.6; /* 選択されていない時は少し半透明に */
         }
 
-        .btn.active {
-            background-color: #2563eb;
-            color: #ffffff;
+        /* のぼりボタン：アクティブ時は薄い赤〜ピンク */
+        #btn-up.active {
+            background-color: #fecdd3; /* 薄い赤・ピンク */
+            color: #9f1239;
+            opacity: 1;
+        }
+
+        /* くだりボタン：アクティブ時は薄い水色 */
+        #btn-down.active {
+            background-color: #e0f2fe; /* 薄い水色 */
+            color: #0369a1;
+            opacity: 1;
         }
 
         .table-container {
@@ -113,9 +124,8 @@
         .row-h1 th { top: 25px; }
         .row-h2 th { top: 50px; }
         .row-h3 th { top: 75px; }
-        .row-h4 th { top: 100px; z-index: 12; } /* 列車番号 */
+        .row-h4 th { top: 100px; z-index: 12; } 
 
-        /* 左側（駅名・発着）の横スクロール固定 */
         table th:nth-child(1), table td:nth-child(1) {
             position: sticky;
             left: 0;
@@ -141,7 +151,6 @@
             background-color: #e2e8f0;
         }
 
-        /* --- 2. 自動色付けスタイル --- */
         .col-hakuto { background-color: var(--bg-hakuto) !important; }
         .col-inaba { background-color: var(--bg-inaba) !important; }
         .col-local { background-color: var(--bg-local) !important; }
@@ -162,8 +171,8 @@
     <header>智頭急行 時刻表</header>
 
     <div class="controls">
-        <button class="btn active" id="btn-up" onclick="switchDirection('up')">上り (京都・大阪・岡山 方面)</button>
-        <button class="btn" id="btn-down" onclick="switchDirection('down')">下り (鳥取・倉吉 方面)</button>
+        <button class="btn active" id="btn-up" onclick="switchDirection('up')">のぼり</button>
+        <button class="btn" id="btn-down" onclick="switchDirection('down')">くだり</button>
     </div>
 
     <div class="table-container">
@@ -177,14 +186,20 @@
         let rawCsvData = [];
         let currentDirection = 'up';
 
+        // サービスワーカー（キャッシュ）の強制更新対策
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => console.log('Service Worker Registered'))
+            navigator.serviceWorker.register('sw.js?v=2026')
+                .then(reg => {
+                    console.log('Service Worker Registered');
+                    // 常に新しいコードを即時反映させる
+                    reg.update();
+                })
                 .catch(err => console.error('Service Worker Failed', err));
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            fetch('timetable.csv')
+            // キャッシュ破棄用のランダムパラメータを付与してCSVを取得
+            fetch('timetable.csv?v=' + Date.now())
                 .then(response => {
                     if (!response.ok) throw new Error('CSVファイルの読み込みに失敗しました。');
                     return response.arrayBuffer();
@@ -242,6 +257,7 @@
             let upStartIndex = 0;
             let downStartIndex = -1;
 
+            // CSVの全行をループして「下り」の境界を特定する処理
             for (let i = 5; i < rawCsvData.length; i++) {
                 const rowStr = rawCsvData[i].join(',');
                 if (rowStr.includes('下り') || rowStr.includes('鳥取')) {
@@ -289,15 +305,3 @@
 
                 const th1 = document.createElement('th');
                 th1.textContent = rowIndex === 0 ? "駅名" : "";
-                tr.appendChild(th1);
-
-                const th2 = document.createElement('th');
-                th2.textContent = rowIndex === 0 ? "発着" : "";
-                tr.appendChild(th2);
-
-                for (let col = 2; col < maxCols; col++) {
-                    const th = document.createElement('th');
-                    let text = row[col] || '';
-                    text = text.replace(/\r?\n/g, ' ');
-                    th.textContent = text;
-                    
