@@ -25,7 +25,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            /* 【追加】全画面でロングタップによるテキスト選択やポップアップを禁止 */
+            /* 全画面でロングタップによるテキスト選択やポップアップを禁止 */
             -webkit-user-select: none; /* iOS Safari */
             -webkit-touch-callout: none; /* iOS Safari 長押しメニュー */
             user-select: none; /* 標準 */
@@ -72,7 +72,7 @@
             cursor: pointer;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent; /* タップ時のハイライトを消す */
+            -webkit-tap-highlight-color: transparent;
         }
 
         .btn.active {
@@ -209,23 +209,29 @@
         }
 
         function toHalfWidth(str) {
+            if (!str) return '';
             return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
                 return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
             });
         }
 
+        // 時刻フォーマット関数のバグを完全修正
         function formatTime(timeStr) {
             if (!timeStr || timeStr === '-' || timeStr === '＝' || timeStr === '||' || timeStr === '…') return '▼';
             
             let clean = toHalfWidth(timeStr).trim();
             
+            // 「06:04:00」などのデータを「06:04」にする処理の修正
             if (clean.includes(':')) {
                 const parts = clean.split(':');
                 if (parts.length >= 2) {
-                    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+                    const hh = parts[0].padStart(2, '0');
+                    const mm = parts[1].padStart(2, '0');
+                    return `${hh}:${mm}`;
                 }
             }
             
+            // 「604」などの数字データを「06:04」にする処理
             if (/^\d+$/.test(clean)) {
                 if (clean.length === 3) clean = '0' + clean;
                 if (clean.length === 4) {
@@ -237,8 +243,8 @@
         }
 
         function getTrainClass(trainName, trainNo) {
-            const name = trainName.toLowerCase();
-            const no = toHalfWidth(trainNo).toLowerCase();
+            const name = (trainName || '').toLowerCase();
+            const no = toHalfWidth(trainNo || '').toLowerCase();
 
             if (name.includes('はくと') || no.includes('はくと')) {
                 return 'col-hakuto';
@@ -260,29 +266,20 @@
         function renderTimetable() {
             if (rawCsvData.length === 0) return;
 
-            // 安全な上下線の判定ロジックに変更
-            let upStartIndex = 0; // 上りは必ずCSVの最初からスタート
+            let upStartIndex = 0;
             let downStartIndex = -1;
 
-            // 5行目以降から次のヘッダー（下り）を探す
+            // 下りデータの開始位置を探索
             for (let i = 5; i < rawCsvData.length; i++) {
                 const rowStr = rawCsvData[i].join(',');
-                // 下りの特徴的な文字、または再びヘッダーが始まる（空欄が多い行など）を検知
-                if (rowStr.includes('下り') || (rawCsvData[i][0] === '' && rawCsvData[i][1] === '' && i + 5 < rawCsvData.length && rawCsvData[i+4][2] !== '')) {
-                    // もし「下り」という明示的な文字がない場合、データの並びから推測
-                    downStartIndex = i;
-                    break;
-                }
-                // もし文字が含まれず、単純に2つのデータがくっついている場合の予備判定
-                if (rowStr.includes('鳥取') && (i + 5 < rawCsvData.length) && (rawCsvData[i+1][0] === '')) {
+                if (rowStr.includes('下り') || rowStr.includes('鳥取')) {
                     downStartIndex = i;
                     break;
                 }
             }
 
-            // 見つからなかった場合の最終手段（データの真ん中あたりで分割）
+            // 見つからなかった場合のセーフティネット
             if (downStartIndex === -1) {
-                // 明示的に見つからない場合は、CSVの中間地点を仮定せずアラートを出すか、データ全体の2/3以降で探す
                 downStartIndex = Math.floor(rawCsvData.length / 2);
             }
 
@@ -298,3 +295,11 @@
             if (targetData.length < 5) return;
 
             const headerRows = targetData.slice(0, 5);
+            const stationRows = targetData.slice(5);
+            
+            // 最大列数を安全に取得
+            let maxCols = 0;
+            targetData.forEach(r => { if(r.length > maxCols) maxCols = r.length; });
+
+            const columnStyles = [];
+            for (let col = 2; col < maxCols; col++) {
