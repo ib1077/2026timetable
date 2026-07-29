@@ -9,15 +9,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon-192.png">
     <style>
-        /* --- 1. スマホ最適化 & 基本リセット --- */
+        /* --- 1. スマホ最適化 & 基本リセット & ロングタップ禁止 --- */
         :root {
             --header-bg: #1e3a8a;
             --header-text: #ffffff;
             --station-bg: #f1f5f9;
             --border-color: #cbd5e1;
-            /* 列車種別ごとの優しい背景色（縦一列用） */
             --bg-hakuto: #ffe4e6; /* 薄いピンク */
-            --bg-inaba: #fef3c7;  /* 薄いオレンジ/黄色 */
+            --bg-inaba: #fef3c7;  /* 薄いオレンジ */
             --bg-local: #dbeafe;  /* 薄い青 */
             --bg-default: #ffffff;
         }
@@ -26,20 +25,23 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            /* 【追加】全画面でロングタップによるテキスト選択やポップアップを禁止 */
+            -webkit-user-select: none; /* iOS Safari */
+            -webkit-touch-callout: none; /* iOS Safari 長押しメニュー */
+            user-select: none; /* 標準 */
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #f8fafc;
             color: #334155;
-            font-size: 12px; /* スマホで見やすい小さめフォント */
-            overflow: hidden; /* 全体スクロールを防ぎ、テーブル内スクロールに */
+            font-size: 12px;
+            overflow: hidden;
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
-        /* アプリヘッダー */
         header {
             background-color: var(--header-bg);
             color: var(--header-text);
@@ -50,7 +52,6 @@
             flex-shrink: 0;
         }
 
-        /* コントロール UI (上下線切り替えボタン) */
         .controls {
             display: flex;
             background: #e2e8f0;
@@ -71,7 +72,7 @@
             cursor: pointer;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
+            -webkit-tap-highlight-color: transparent; /* タップ時のハイライトを消す */
         }
 
         .btn.active {
@@ -79,19 +80,18 @@
             color: #ffffff;
         }
 
-        /* テーブルコンテナ（ここがスクロールする） */
         .table-container {
             flex: 1;
             overflow: auto;
             position: relative;
-            -webkit-overflow-scrolling: touch; /* iOSのスムーズスクロール */
+            -webkit-overflow-scrolling: touch;
         }
 
         /* --- 3. 列車番号・駅名の完全追従固定 (CSS Sticky) --- */
         table {
-            border-collapse: separate; /* stickyを正常に動かすため別々に */
+            border-collapse: separate;
             border-spacing: 0;
-            width: max-content; /* コンテンツ幅に合わせる */
+            width: max-content;
             min-width: 100%;
         }
 
@@ -103,21 +103,19 @@
             white-space: nowrap;
         }
 
-        /* ヘッダー行 (1〜5行目) の一括固定設定 */
         .thead-sticky th {
             position: sticky;
             background-color: #f1f5f9;
             z-index: 10;
         }
 
-        /* 縦スクロール時に上部にピタッと固定するピクセル数計算 */
-        .row-h0 th { top: 0; z-index: 12; }   /* 方面 */
-        .row-h1 th { top: 25px; } /* 特急名 */
-        .row-h2 th { top: 50px; } /* 始発 */
-        .row-h3 th { top: 75px; } /* 終着 */
-        .row-h4 th { top: 100px; z-index: 12; } /* 列車番号 (ピタッと追随) */
+        .row-h0 th { top: 0; z-index: 12; }
+        .row-h1 th { top: 25px; }
+        .row-h2 th { top: 50px; }
+        .row-h3 th { top: 75px; }
+        .row-h4 th { top: 100px; z-index: 12; } /* 列車番号 */
 
-        /* 左側（駅名・発着）の横スクロール固定設定 */
+        /* 左側（駅名・発着）の横スクロール固定 */
         table th:nth-child(1), table td:nth-child(1) {
             position: sticky;
             left: 0;
@@ -129,7 +127,7 @@
         }
         table th:nth-child(2), table td:nth-child(2) {
             position: sticky;
-            left: 70px; /* 駅名の幅に応じて調整 */
+            left: 70px;
             background-color: var(--station-bg);
             z-index: 5;
             border-right: 2px solid #94a3b8;
@@ -137,26 +135,23 @@
             color: #64748b;
         }
 
-        /* 左上角（ヘッダーと駅名が交差するエリア）の最前面化 */
         .thead-sticky th:nth-child(1),
         .thead-sticky th:nth-child(2) {
             z-index: 15;
             background-color: #e2e8f0;
         }
 
-        /* --- 2. 自動色付け用のスタイル定義 --- */
+        /* --- 2. 自動色付けスタイル --- */
         .col-hakuto { background-color: var(--bg-hakuto) !important; }
         .col-inaba { background-color: var(--bg-inaba) !important; }
         .col-local { background-color: var(--bg-local) !important; }
         .col-default { background-color: var(--bg-default); }
 
-        /* 時刻セルの文字装飾 */
         .time-cell {
-            font-variant-numeric: tabular-nums; /* 数字の幅を揃える */
+            font-variant-numeric: tabular-nums;
             font-weight: 500;
         }
         
-        /* 空白セル */
         .empty-cell {
             color: #cbd5e1;
         }
@@ -179,18 +174,15 @@
     </div>
 
     <script>
-        // 状態管理
         let rawCsvData = [];
-        let currentDirection = 'up'; // 'up' または 'down'
+        let currentDirection = 'up';
 
-        // サービスワーカーの登録 (PWA用)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
                 .then(() => console.log('Service Worker Registered'))
                 .catch(err => console.error('Service Worker Failed', err));
         }
 
-        // ページ読み込み時にCSVを取得
         window.addEventListener('DOMContentLoaded', () => {
             fetch('timetable.csv')
                 .then(response => {
@@ -198,7 +190,6 @@
                     return response.arrayBuffer();
                 })
                 .then(buffer => {
-                    // UTF-8としてデコード（文字化け対策済）
                     const decoder = new TextDecoder('utf-8');
                     const text = decoder.decode(buffer);
                     parseCSV(text);
@@ -208,33 +199,26 @@
                 });
         });
 
-        // CSVパース処理
         function parseCSV(text) {
             const lines = text.split(/\r\n|\n/);
             rawCsvData = lines.map(line => {
-                // カンマ分割（クォーテーション内のカンマや改行を考慮する簡易パース）
-                // セル内改行は事前にスペース等に変換されている前提、または1行1データとして処理
                 return line.split(',').map(cell => cell.replace(/^"(.*)"$/, '$1').trim());
-            }).filter(row => row.length > 0 && row[0] !== "");
+            }).filter(row => row.length > 0 && row[0] !== ""); // 空行を除外
 
             renderTimetable();
         }
 
-        // 全角英数字を半角に変換する関数 (4. 全角文字の自動修正)
         function toHalfWidth(str) {
             return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
                 return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
             });
         }
 
-        // 時刻のフォーマット整形 (秒の削除、3〜4桁のコロン補完)
         function formatTime(timeStr) {
-            if (!timeStr || timeStr === '-' || timeStr === '＝' || timeStr === '||') return '▼';
+            if (!timeStr || timeStr === '-' || timeStr === '＝' || timeStr === '||' || timeStr === '…') return '▼';
             
-            // 全角を半角に
             let clean = toHalfWidth(timeStr).trim();
             
-            // 「06:04:00」などの秒付きデータを「06:04」に
             if (clean.includes(':')) {
                 const parts = clean.split(':');
                 if (parts.length >= 2) {
@@ -242,7 +226,6 @@
                 }
             }
             
-            // 「604」や「1230」などの数字のみのデータを「06:04」「12:30」に
             if (/^\d+$/.test(clean)) {
                 if (clean.length === 3) clean = '0' + clean;
                 if (clean.length === 4) {
@@ -250,10 +233,9 @@
                 }
             }
             
-            return clean; // それ以外の文字列はそのまま返す
+            return clean;
         }
 
-        // 列の列車種別を判定してクラス名を返す関数 (2. 列の自動色付け)
         function getTrainClass(trainName, trainNo) {
             const name = trainName.toLowerCase();
             const no = toHalfWidth(trainNo).toLowerCase();
@@ -263,13 +245,11 @@
             } else if (name.includes('いなば') || no.includes('いなば')) {
                 return 'col-inaba';
             } else if (name.includes('普通') || no.includes('d') || !name) {
-                // 列車番号に「D」が含まれる、または普通表記
                 return 'col-local';
             }
             return 'col-default';
         }
 
-        // 上下線の切り替えスイッチ
         function switchDirection(dir) {
             currentDirection = dir;
             document.getElementById('btn-up').classList.toggle('active', dir === 'up');
@@ -277,21 +257,44 @@
             renderTimetable();
         }
 
-        // 時刻表の描画処理
         function renderTimetable() {
             if (rawCsvData.length === 0) return;
 
-            // 1. 上り・下りのデータ境界線を判定
-            // CSV全体の行から、ヘッダーの特徴（「上り」「下り」等の文言）を探す
-            let upStartIndex = -1;
+            // 安全な上下線の判定ロジックに変更
+            let upStartIndex = 0; // 上りは必ずCSVの最初からスタート
             let downStartIndex = -1;
 
-            for (let i = 0; i < rawCsvData.length; i++) {
-                const firstCell = rawCsvData[i][0] || '';
-                if (upStartIndex === -1 && (firstCell.includes('上り') || rawCsvData[i].join('').includes('京都'))) {
-                    upStartIndex = i;
-                }
-                // 2つ目のヘッダー（下り）の開始位置を特定
-                if (i > upStartIndex + 5 && downStartIndex === -1 && (firstCell.includes('下り') || rawCsvData[i].join('').includes('鳥取'))) {
+            // 5行目以降から次のヘッダー（下り）を探す
+            for (let i = 5; i < rawCsvData.length; i++) {
+                const rowStr = rawCsvData[i].join(',');
+                // 下りの特徴的な文字、または再びヘッダーが始まる（空欄が多い行など）を検知
+                if (rowStr.includes('下り') || (rawCsvData[i][0] === '' && rawCsvData[i][1] === '' && i + 5 < rawCsvData.length && rawCsvData[i+4][2] !== '')) {
+                    // もし「下り」という明示的な文字がない場合、データの並びから推測
                     downStartIndex = i;
                     break;
+                }
+                // もし文字が含まれず、単純に2つのデータがくっついている場合の予備判定
+                if (rowStr.includes('鳥取') && (i + 5 < rawCsvData.length) && (rawCsvData[i+1][0] === '')) {
+                    downStartIndex = i;
+                    break;
+                }
+            }
+
+            // 見つからなかった場合の最終手段（データの真ん中あたりで分割）
+            if (downStartIndex === -1) {
+                // 明示的に見つからない場合は、CSVの中間地点を仮定せずアラートを出すか、データ全体の2/3以降で探す
+                downStartIndex = Math.floor(rawCsvData.length / 2);
+            }
+
+            let startRow = upStartIndex;
+            let endRow = downStartIndex;
+
+            if (currentDirection === 'down') {
+                startRow = downStartIndex;
+                endRow = rawCsvData.length;
+            }
+
+            const targetData = rawCsvData.slice(startRow, endRow).filter(r => r.length > 1);
+            if (targetData.length < 5) return;
+
+            const headerRows = targetData.slice(0, 5);
