@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智頭急行 時刻表ビューア</title>
+<style>
+body{font-family:sans-serif;margin:0;background:#f9f9f9}
+/* 上部の切り替えバー */
+.nav-bar{display:flex;align-items:center;background:#007bff;padding:10px;position:sticky;top:0;z-index:10;box-shadow:0 2px 5px rgba(0,0,0,0.2)}
+h2{margin:0;color:#fff;font-size:16px;flex-grow:1}
+.btn-group{display:flex;gap:5px}
+button{background:#fff;border:none;padding:6px 12px;font-size:12px;font-weight:bold;border-radius:4px;cursor:pointer;color:#007bff}
+button.active{background:#ffc107;color:#000}
+
+/* スクロール領域 */
+.wrap{overflow:auto;height:calc(100vh - 45px);background:#fff}
+table{border-collapse:separate;border-spacing:0;font-size:12px}
+th,td{border-right:1px solid #ccc;border-bottom:1px solid #ccc;padding:4px 8px;white-space:nowrap;text-align:center}
+
+/* 縦スクロール時に上の見出し（5行分）を最上部に固定 */
+tr:nth-child(-n+5) th {
+  position: sticky;
+  background: #e9e9e9;
+  z-index: 2;
+}
+tr:nth-child(1) th { top: 0; }
+tr:nth-child(2) th { top: 23px; }
+tr:nth-child(3) th { top: 62px; }
+tr:nth-child(4) th { top: 85px; }
+tr:nth-child(5) th { top: 108px; }
+
+/* 横スクロール時に左の「駅名（1列目）」と「発着（2列目）」を左端に固定 */
+th:nth-child(1), td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 1;
+  border-left: 1px solid #ccc;
+  text-align: left;
+}
+th:nth-child(2), td:nth-child(2) {
+  position: sticky;
+  left: 55px;
+  background: #fff;
+  z-index: 1;
+  text-align: left;
+}
+
+/* 左上角の見出し交差点部分の重なり順を一番上にする */
+tr:nth-child(-n+5) th:nth-child(-n+2) {
+  z-index: 3;
+  background: #e9e9e9;
+}
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <h2>智頭急行 時刻表</h2>
+  <div class="btn-group">
+    <button id="btn-up" class="active" onclick="switchDirection('up')">上り(大阪方面)</button>
+    <button id="btn-down" onclick="switchDirection('down')">下り(鳥取方面)</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <table id="timetable-table"><!-- データが自動挿入されます --></table>
+</div>
+
+<script>
+let upRows = [];
+let downRows = [];
+
+// 時刻データを「時:分」の形に整形する関数（秒は切り捨て）
+function formatTimeValue(val) {
+  if (!val) return '';
+  
+  // 1. 「06:04:00」のような「時:分:秒」形式の処理
+  if (val.includes(':')) {
+    const parts = val.split(':');
+    if (parts.length >= 2) {
+      // 秒（parts[2]）を無視して「時:分」だけを結合
+      return parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
+    }
+  }
+  
+  // 2. 「604」や「1140」のようなコロンなしの数字の処理
+  if (/^\d{3,4}$/.test(val)) {
+    const min = val.slice(-2);          // 後ろの2桁（分）
+    const hour = val.slice(0, -2);       // 残りの前桁（時）
+    return hour.padStart(2, '0') + ':' + min;
+  }
+  
+  // 3. 列車番号や駅名、記号（↓や∥）はそのまま返す
+  return val;
+}
+
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/);
+  let currentDir = 'up';
+  
+  lines.forEach((line) => {
+    if (!line.trim()) return;
+    
+    if (line.includes('京都・大阪・岡山 方面')) { currentDir = 'up'; return; }
+    if (line.includes('鳥取・倉吉 方面')) { currentDir = 'down'; return; }
+    
+    const cells = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+    
+    if (currentDir === 'up') { upRows.push(cells); } 
+    else { downRows.push(cells); }
+  });
+}
+
+function renderTable(rows) {
+  const table = document.getElementById('timetable-table');
+  table.innerHTML = '';
+  
+  rows.forEach((cells, index) => {
+    const tr = document.createElement('tr');
+    const isHeader = index < 5;
+    
+    cells.forEach((cellValue, cellIndex) => {
+      const cellType = isHeader ? 'th' : 'td';
+      const el = document.createElement(cellType);
+      let cleanText = cellValue.replace(/^"|"$/g, '').trim();
+      
+      // データ行（駅の時刻データ）かつ、駅名・発着列（1列目と2列目）以外なら時刻整形を行う
+      if (!isHeader && cellIndex >= 2) {
+        cleanText = formatTimeValue(cleanText);
+      }
+      
+      el.innerHTML = cleanText.replace(/\n/g, '<br>');
+      tr.appendChild(el);
+    });
+    table.appendChild(tr);
+  });
+}
+
+function switchDirection(dir) {
+  document.getElementById('btn-up').classList.toggle('active', dir === 'up');
+  document.getElementById('btn-down').classList.toggle('active', dir === 'down');
+  renderTable(dir === 'up' ? upRows : downRows);
+  document.querySelector('.wrap').scrollTop = 0;
+  document.querySelector('.wrap').scrollLeft = 0;
+}
+
+fetch('timetable.csv')
+  .then(response => {
+    if (!response.ok) throw new Error('CSVファイルの読み込みに失敗しました');
+    return response.arrayBuffer();
+  })
+  .then(buffer => {
+    const decoder = new TextDecoder('shift-jis');
+    parseCSV(decoder.decode(buffer));
+    renderTable(upRows);
+  })
+  .catch(error => {
+    console.error(error);
+    alert('エラー: timetable.csv を読み込めませんでした。');
+  });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(() => console.log('PWA Service Worker Registered'));
+}
+</script>
+</body>
+</html>
