@@ -203,7 +203,7 @@
             const lines = text.split(/\r\n|\n/);
             rawCsvData = lines.map(line => {
                 return line.split(',').map(cell => cell.replace(/^"(.*)"$/, '$1').trim());
-            }).filter(row => row.length > 0 && row[0] !== ""); // 空行を除外
+            }).filter(row => row.length > 0 && row !== "");
 
             renderTimetable();
         }
@@ -213,33 +213,6 @@
             return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
                 return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
             });
-        }
-
-        // 時刻フォーマット関数のバグを完全修正
-        function formatTime(timeStr) {
-            if (!timeStr || timeStr === '-' || timeStr === '＝' || timeStr === '||' || timeStr === '…') return '▼';
-            
-            let clean = toHalfWidth(timeStr).trim();
-            
-            // 「06:04:00」などのデータを「06:04」にする処理の修正
-            if (clean.includes(':')) {
-                const parts = clean.split(':');
-                if (parts.length >= 2) {
-                    const hh = parts[0].padStart(2, '0');
-                    const mm = parts[1].padStart(2, '0');
-                    return `${hh}:${mm}`;
-                }
-            }
-            
-            // 「604」などの数字データを「06:04」にする処理
-            if (/^\d+$/.test(clean)) {
-                if (clean.length === 3) clean = '0' + clean;
-                if (clean.length === 4) {
-                    return `${clean.substring(0, 2)}:${clean.substring(2, 4)}`;
-                }
-            }
-            
-            return clean;
         }
 
         function getTrainClass(trainName, trainNo) {
@@ -269,7 +242,6 @@
             let upStartIndex = 0;
             let downStartIndex = -1;
 
-            // 下りデータの開始位置を探索
             for (let i = 5; i < rawCsvData.length; i++) {
                 const rowStr = rawCsvData[i].join(',');
                 if (rowStr.includes('下り') || rowStr.includes('鳥取')) {
@@ -278,7 +250,6 @@
                 }
             }
 
-            // 見つからなかった場合のセーフティネット
             if (downStartIndex === -1) {
                 downStartIndex = Math.floor(rawCsvData.length / 2);
             }
@@ -297,9 +268,36 @@
             const headerRows = targetData.slice(0, 5);
             const stationRows = targetData.slice(5);
             
-            // 最大列数を安全に取得
             let maxCols = 0;
             targetData.forEach(r => { if(r.length > maxCols) maxCols = r.length; });
 
             const columnStyles = [];
             for (let col = 2; col < maxCols; col++) {
+                const trainName = headerRows ? (headerRows[col] || '') : '';
+                let trainNo = headerRows ? (headerRows[col] || '') : '';
+                trainNo = toHalfWidth(trainNo);
+
+                columnStyles[col] = getTrainClass(trainName, trainNo);
+            }
+
+            const headId = document.getElementById('table-head');
+            headId.innerHTML = '';
+
+            headerRows.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                tr.classList.add(`row-h${rowIndex}`);
+
+                const th1 = document.createElement('th');
+                th1.textContent = rowIndex === 0 ? "駅名" : "";
+                tr.appendChild(th1);
+
+                const th2 = document.createElement('th');
+                th2.textContent = rowIndex === 0 ? "発着" : "";
+                tr.appendChild(th2);
+
+                for (let col = 2; col < maxCols; col++) {
+                    const th = document.createElement('th');
+                    let text = row[col] || '';
+                    text = text.replace(/\r?\n/g, ' ');
+                    th.textContent = text;
+                    
