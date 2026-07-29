@@ -152,7 +152,7 @@ fetch('timetable.csv')
     return response.arrayBuffer();
   })
   .then(buffer => {
-    const decoder = new TextDecoder('shift-jis');
+    const decoder = new TextDecoder('utf-8'); // 💡ここを utf-8 に書き換えます
     parseCSV(decoder.decode(buffer));
     renderTable(upRows);
   })
