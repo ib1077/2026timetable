@@ -2,306 +2,361 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
     <title>智頭急行 時刻表 PWA</title>
-    <!-- 【対策】キャッシュを強制的に更新させるためのクエリパラメータを追加 -->
+
     <link rel="manifest" href="manifest.json?v=2026">
+
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent">
+
     <link rel="apple-touch-icon" href="icon-192.png">
+
     <style>
-        /* --- 1. スマホ最適化 & 基本リセット & ロングタップ禁止 --- */
-        :root {
-            --header-bg: #1e3a8a;
-            --header-text: #ffffff;
-            --station-bg: #f1f5f9;
-            --border-color: #cbd5e1;
-            --bg-hakuto: #ffe4e6; /* 特急はくと：薄いピンク */
-            --bg-inaba: #fef3c7;  /* 特急いなば：薄いオレンジ */
-            --bg-local: #dbeafe;  /* 普通列車：薄い青 */
-            --bg-default: #ffffff;
-        }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-user-select: none; 
-            -webkit-touch-callout: none; 
-            user-select: none; 
-        }
+:root{
+    --header-bg:#1e3a8a;
+    --header-text:#ffffff;
+    --station-bg:#f1f5f9;
+    --border-color:#cbd5e1;
+    --bg-hakuto:#ffe4e6;
+    --bg-inaba:#fef3c7;
+    --bg-local:#dbeafe;
+    --bg-default:#ffffff;
+}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f8fafc;
-            color: #334155;
-            font-size: 12px;
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+}
 
-        header {
-            background-color: var(--header-bg);
-            color: var(--header-text);
-            padding: 8px 12px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
+body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,
+                "Helvetica Neue",Arial,sans-serif;
+    background:#f8fafc;
+    color:#334155;
+    font-size:12px;
+    height:100vh;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+}
 
-        /* --- ボタンのシンプル化と指定色への変更 --- */
-        .controls {
-            display: flex;
-            background: #e2e8f0;
-            padding: 6px;
-            gap: 6px;
-            flex-shrink: 0;
-        }
+header{
+    background:var(--header-bg);
+    color:var(--header-text);
+    padding:8px 12px;
+    text-align:center;
+    font-size:14px;
+    font-weight:bold;
+    flex-shrink:0;
+}
 
-        .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
-            color: #475569;
-            background-color: #ffffff; /* 選択されていない時は白 */
-            opacity: 0.6; /* 選択されていない時は少し半透明に */
-        }
+.controls{
+    display:flex;
+    gap:6px;
+    padding:6px;
+    background:#e2e8f0;
+    flex-shrink:0;
+}
 
-        /* のぼりボタン：アクティブ時は薄い赤〜ピンク */
-        #btn-up.active {
-            background-color: #fecdd3; /* 薄い赤・ピンク */
-            color: #9f1239;
-            opacity: 1;
-        }
+.btn{
+    flex:1;
+    padding:12px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:bold;
+    background:#fff;
+    color:#475569;
+    opacity:.6;
+}
 
-        /* くだりボタン：アクティブ時は薄い水色 */
-        #btn-down.active {
-            background-color: #e0f2fe; /* 薄い水色 */
-            color: #0369a1;
-            opacity: 1;
-        }
+#btn-up.active{
+    background:#fecdd3;
+    color:#9f1239;
+    opacity:1;
+}
 
-        .table-container {
-            flex: 1;
-            overflow: auto;
-            position: relative;
-            -webkit-overflow-scrolling: touch;
-        }
+#btn-down.active{
+    background:#e0f2fe;
+    color:#0369a1;
+    opacity:1;
+}
 
-        /* --- 3. 列車番号・駅名の完全追従固定 (CSS Sticky) --- */
-        table {
-            border-collapse: separate;
-            border-spacing: 0;
-            width: max-content;
-            min-width: 100%;
-        }
+.table-container{
+    flex:1;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+}
 
-        th, td {
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            padding: 6px 8px;
-            text-align: center;
-            white-space: nowrap;
-        }
+table{
+    border-collapse:separate;
+    border-spacing:0;
+    width:max-content;
+    min-width:100%;
+}
 
-        .thead-sticky th {
-            position: sticky;
-            background-color: #f1f5f9;
-            z-index: 10;
-        }
+th,
+td{
+    border-right:1px solid var(--border-color);
+    border-bottom:1px solid var(--border-color);
+    padding:6px 8px;
+    text-align:center;
+    white-space:nowrap;
+}
 
-        .row-h0 th { top: 0; z-index: 12; }
-        .row-h1 th { top: 25px; }
-        .row-h2 th { top: 50px; }
-        .row-h3 th { top: 75px; }
-        .row-h4 th { top: 100px; z-index: 12; } 
+.thead-sticky th{
+    position:sticky;
+    background:#f1f5f9;
+    z-index:10;
+}
 
-        table th:nth-child(1), table td:nth-child(1) {
-            position: sticky;
-            left: 0;
-            background-color: var(--station-bg);
-            z-index: 5;
-            font-weight: bold;
-            text-align: left;
-            border-right: 2px solid #94a3b8;
-        }
-        table th:nth-child(2), table td:nth-child(2) {
-            position: sticky;
-            left: 70px;
-            background-color: var(--station-bg);
-            z-index: 5;
-            border-right: 2px solid #94a3b8;
-            font-size: 10px;
-            color: #64748b;
-        }
+.row-h0 th{
+    top:0;
+    z-index:12;
+}
 
-        .thead-sticky th:nth-child(1),
-        .thead-sticky th:nth-child(2) {
-            z-index: 15;
-            background-color: #e2e8f0;
-        }
+table th:nth-child(1),
+table td:nth-child(1){
+    position:sticky;
+    left:0;
+    background:var(--station-bg);
+    font-weight:bold;
+    text-align:left;
+    border-right:2px solid #94a3b8;
+    z-index:5;
+}
 
-        .col-hakuto { background-color: var(--bg-hakuto) !important; }
-        .col-inaba { background-color: var(--bg-inaba) !important; }
-        .col-local { background-color: var(--bg-local) !important; }
-        .col-default { background-color: var(--bg-default); }
+table th:nth-child(2),
+table td:nth-child(2){
+    position:sticky;
+    left:70px;
+    background:var(--station-bg);
+    border-right:2px solid #94a3b8;
+    color:#64748b;
+    font-size:10px;
+    z-index:5;
+}
 
-        .time-cell {
-            font-variant-numeric: tabular-nums;
-            font-weight: 500;
-        }
-        
-        .empty-cell {
-            color: #cbd5e1;
-        }
+.thead-sticky th:nth-child(1),
+.thead-sticky th:nth-child(2){
+    background:#e2e8f0;
+    z-index:15;
+}
+
+.col-hakuto{
+    background:var(--bg-hakuto)!important;
+}
+
+.col-inaba{
+    background:var(--bg-inaba)!important;
+}
+
+.col-local{
+    background:var(--bg-local)!important;
+}
+
+.col-default{
+    background:var(--bg-default);
+}
+
+.time-cell{
+    font-variant-numeric:tabular-nums;
+    font-weight:500;
+}
+
+.empty-cell{
+    color:#cbd5e1;
+}
+
     </style>
 </head>
+
 <body>
 
-    <header>智頭急行 時刻表</header>
+<header>智頭急行 時刻表</header>
 
-    <div class="controls">
-        <button class="btn active" id="btn-up" onclick="switchDirection('up')">のぼり</button>
-        <button class="btn" id="btn-down" onclick="switchDirection('down')">くだり</button>
-    </div>
+<div class="controls">
+    <button id="btn-up"
+            class="btn active"
+            onclick="switchDirection('up')">
+        のぼり
+    </button>
 
-    <div class="table-container">
-        <table id="timetable-table">
-            <thead id="table-head" class="thead-sticky"></thead>
-            <tbody id="table-body"></tbody>
-        </table>
-    </div>
+    <button id="btn-down"
+            class="btn"
+            onclick="switchDirection('down')">
+        くだり
+    </button>
+</div>
 
-    <script>
-        let rawCsvData = [];
-        let currentDirection = 'up';
+<div class="table-container">
 
-        // サービスワーカー（キャッシュ）の強制更新対策
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?v=2026')
-                .then(reg => {
-                    console.log('Service Worker Registered');
-                    // 常に新しいコードを即時反映させる
-                    reg.update();
-                })
-                .catch(err => console.error('Service Worker Failed', err));
-        }
+    <table id="timetable-table">
 
-        window.addEventListener('DOMContentLoaded', () => {
-            // キャッシュ破棄用のランダムパラメータを付与してCSVを取得
-            fetch('timetable.csv?v=' + Date.now())
-                .then(response => {
-                    if (!response.ok) throw new Error('CSVファイルの読み込みに失敗しました。');
-                    return response.arrayBuffer();
-                })
-                .then(buffer => {
-                    const decoder = new TextDecoder('utf-8');
-                    const text = decoder.decode(buffer);
-                    parseCSV(text);
-                })
-                .catch(error => {
-                    alert(error.message);
-                });
+        <thead id="table-head"
+               class="thead-sticky">
+        </thead>
+
+        <tbody id="table-body">
+        </tbody>
+
+    </table>
+
+</div>
+
+<script src="timetable.js"></script>
+
+<script>
+    let currentDirection = "up";
+
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js?v=2026");
+    });
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    renderTimetable();
+});
+
+function switchDirection(dir){
+
+    currentDirection = dir;
+
+    document
+        .getElementById("btn-up")
+        .classList.toggle("active", dir === "up");
+
+    document
+        .getElementById("btn-down")
+        .classList.toggle("active", dir === "down");
+
+    renderTimetable();
+
+}
+
+function toHalfWidth(str){
+
+    if(!str) return "";
+
+    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g,function(s){
+        return String.fromCharCode(s.charCodeAt(0)-0xFEE0);
+    });
+
+}
+
+function getTrainClass(train){
+
+    const t = toHalfWidth(train);
+
+    if(t.includes("はくと")) return "col-hakuto";
+
+    if(t.includes("いなば")) return "col-inaba";
+
+    if(t.includes("D")) return "col-local";
+
+    return "col-default";
+
+}
+
+function renderTimetable(){
+
+    const data =
+        currentDirection==="up"
+        ? timetable.nobori
+        : timetable.kudari;
+
+    const thead=document.getElementById("table-head");
+    const tbody=document.getElementById("table-body");
+
+    thead.innerHTML="";
+    tbody.innerHTML="";
+
+    createHeader(data,thead);
+
+    createBody(data,tbody);
+
+}
+
+function createHeader(data,thead){
+
+    const tr=document.createElement("tr");
+
+    tr.className="row-h0";
+
+    let th=document.createElement("th");
+    th.textContent="駅名";
+    tr.appendChild(th);
+
+    th=document.createElement("th");
+    th.textContent="";
+    tr.appendChild(th);
+
+    data.trains.forEach(train=>{
+
+        const h=document.createElement("th");
+
+        h.textContent=train;
+
+        h.className=getTrainClass(train);
+
+        tr.appendChild(h);
+
+    });
+
+    thead.appendChild(tr);
+
+}
+function createBody(data, tbody){
+
+    data.rows.forEach(row => {
+
+        const tr = document.createElement("tr");
+
+        const parts = row.station.split(" ");
+
+        let td = document.createElement("td");
+        td.textContent = parts[0] || "";
+        tr.appendChild(td);
+
+        td = document.createElement("td");
+        td.textContent = parts.slice(1).join(" ");
+        tr.appendChild(td);
+
+        row.times.forEach((time, index) => {
+
+            const td = document.createElement("td");
+
+            td.textContent = time;
+
+            td.className =
+                "time-cell " +
+                getTrainClass(data.trains[index]);
+
+            if(time === ""){
+                td.classList.add("empty-cell");
+            }
+
+            tr.appendChild(td);
+
         });
 
-        function parseCSV(text) {
-            const lines = text.split(/\r\n|\n/);
-            rawCsvData = lines.map(line => {
-                return line.split(',').map(cell => cell.replace(/^"(.*)"$/, '$1').trim());
-            }).filter(row => row.length > 0 && row !== "");
+        tbody.appendChild(tr);
 
-            renderTimetable();
-        }
+    });
 
-        function toHalfWidth(str) {
-            if (!str) return '';
-            return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
-                return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-            });
-        }
+}
+</script>
 
-        function getTrainClass(trainName, trainNo) {
-            const name = (trainName || '').toLowerCase();
-            const no = toHalfWidth(trainNo || '').toLowerCase();
-
-            if (name.includes('はくと') || no.includes('はくと')) {
-                return 'col-hakuto';
-            } else if (name.includes('いなば') || no.includes('いなば')) {
-                return 'col-inaba';
-            } else if (name.includes('普通') || no.includes('d') || !name) {
-                return 'col-local';
-            }
-            return 'col-default';
-        }
-
-        function switchDirection(dir) {
-            currentDirection = dir;
-            document.getElementById('btn-up').classList.toggle('active', dir === 'up');
-            document.getElementById('btn-down').classList.toggle('active', dir === 'down');
-            renderTimetable();
-        }
-
-        function renderTimetable() {
-            if (rawCsvData.length === 0) return;
-
-            let upStartIndex = 0;
-            let downStartIndex = -1;
-
-            // CSVの全行をループして「下り」の境界を特定する処理
-            for (let i = 5; i < rawCsvData.length; i++) {
-                const rowStr = rawCsvData[i].join(',');
-                if (rowStr.includes('下り') || rowStr.includes('鳥取')) {
-                    downStartIndex = i;
-                    break;
-                }
-            }
-
-            if (downStartIndex === -1) {
-                downStartIndex = Math.floor(rawCsvData.length / 2);
-            }
-
-            let startRow = upStartIndex;
-            let endRow = downStartIndex;
-
-            if (currentDirection === 'down') {
-                startRow = downStartIndex;
-                endRow = rawCsvData.length;
-            }
-
-            const targetData = rawCsvData.slice(startRow, endRow).filter(r => r.length > 1);
-            if (targetData.length < 5) return;
-
-            const headerRows = targetData.slice(0, 5);
-            const stationRows = targetData.slice(5);
-            
-            let maxCols = 0;
-            targetData.forEach(r => { if(r.length > maxCols) maxCols = r.length; });
-
-            const columnStyles = [];
-            for (let col = 2; col < maxCols; col++) {
-                const trainName = headerRows ? (headerRows[col] || '') : '';
-                let trainNo = headerRows ? (headerRows[col] || '') : '';
-                trainNo = toHalfWidth(trainNo);
-
-                columnStyles[col] = getTrainClass(trainName, trainNo);
-            }
-
-            const headId = document.getElementById('table-head');
-            headId.innerHTML = '';
-
-            headerRows.forEach((row, rowIndex) => {
-                const tr = document.createElement('tr');
-                tr.classList.add(`row-h${rowIndex}`);
-
-                const th1 = document.createElement('th');
-                th1.textContent = rowIndex === 0 ? "駅名" : "";
+</body>
+</html>

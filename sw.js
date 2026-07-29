@@ -1,24 +1,58 @@
-const CACHE_NAME = 'timetable-v2';
+const CACHE_NAME = "timetable-v3";
+
 const ASSETS = [
-  'index.html',
-  'timetable.csv',
-  'manifest.json',
-  'icon-192.png',
-  'icon-512.png'
+    "./",
+    "index.html",
+    "timetable.js",
+    "manifest.json",
+    "icon-192.png",
+    "icon-512.png"
 ];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
-  );
+self.addEventListener("install", event => {
+
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(ASSETS))
+    );
+
+    self.skipWaiting();
+
 });
 
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => {
-      return response || fetch(e.request);
-    })
-  );
+self.addEventListener("activate", event => {
+
+    event.waitUntil(
+
+        caches.keys().then(keys =>
+
+            Promise.all(
+
+                keys.map(key => {
+
+                    if (key !== CACHE_NAME) {
+                        return caches.delete(key);
+                    }
+
+                })
+
+            )
+
+        )
+
+    );
+
+    self.clients.claim();
+
+});
+
+self.addEventListener("fetch", event => {
+
+    event.respondWith(
+
+        caches.match(event.request)
+            .then(response => response || fetch(event.request))
+
+    );
+
 });

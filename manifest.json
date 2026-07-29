@@ -1,6 +1,6 @@
 {
-  "name": "智頭急行 時刻表",
-  "short_name": "智頭急行",
+  "name": "ckk時刻",
+  "short_name": "ckk",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
