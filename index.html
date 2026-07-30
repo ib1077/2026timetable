@@ -184,7 +184,9 @@ table td:nth-child(2){
 .empty-cell{
     color:#cbd5e1;
 }
-
+th{
+    line-height:1.2;
+}
     </style>
 </head>
 
@@ -322,18 +324,33 @@ function createHeader(data,thead){
     th.textContent="";
     tr.appendChild(th);
 
-    data.trains.forEach(train=>{
+data.trains.forEach(train => {
 
-        const h=document.createElement("th");
+    const h = document.createElement("th");
 
-        h.textContent=train;
+    if (train.startsWith("スーパーはくと")) {
 
-        h.className=getTrainClass(train);
+        const num = train.replace("スーパーはくと", "");
 
-        tr.appendChild(h);
+        h.innerHTML = "はくと<br>" + num;
 
-    });
+    } else if (train.startsWith("スーパーいなば")) {
 
+        const num = train.replace("スーパーいなば", "");
+
+        h.innerHTML = "いなば<br>" + num;
+
+    } else {
+
+        h.textContent = train;
+
+    }
+
+    h.className = getTrainClass(train);
+
+    tr.appendChild(h);
+
+});
     thead.appendChild(tr);
 
 }
