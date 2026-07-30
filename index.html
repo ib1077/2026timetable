@@ -63,7 +63,12 @@ header{
     font-weight:bold;
     flex-shrink:0;
 }
-
+#app-version{
+    font-size:12px;
+    font-weight:normal;
+    opacity:0.8;
+    margin-left:8px;
+}
 .controls{
     display:flex;
     gap:6px;
@@ -192,7 +197,10 @@ th{
 
 <body>
 
-<header>智頭急行 時刻表</header>
+<header>
+    智頭急行 時刻表
+    <span id="app-version"></span>
+</header>
 
 <div class="controls">
     <button id="btn-up"
@@ -226,6 +234,7 @@ th{
 <script src="timetable.js"></script>
 
 <script>
+    const APP_VERSION = "0.2.1";
     let currentDirection = "up";
 
 if ("serviceWorker" in navigator) {
@@ -235,7 +244,12 @@ if ("serviceWorker" in navigator) {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+
+    document.getElementById("app-version").textContent =
+        " Ver." + APP_VERSION;
+
     switchDirection("up");
+
 });
 
 function switchDirection(dir){
