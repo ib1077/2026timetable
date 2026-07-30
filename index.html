@@ -123,7 +123,7 @@ td{
 
 .thead-sticky th{
     position:sticky;
-    background:#f1f5f9;
+    background:#f8f8f8;
     z-index:10;
 }
 
@@ -156,7 +156,7 @@ table td:nth-child(2){
 
 .thead-sticky th:nth-child(1),
 .thead-sticky th:nth-child(2){
-    background:#e2e8f0;
+    background:#f8f8f8;
     z-index:15;
 }
 
@@ -233,7 +233,7 @@ if ("serviceWorker" in navigator) {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-    renderTimetable();
+    switchDirection("up");
 });
 
 function switchDirection(dir){
@@ -247,6 +247,19 @@ function switchDirection(dir){
     document
         .getElementById("btn-down")
         .classList.toggle("active", dir === "down");
+
+    // 画面テーマ切替
+    if(dir === "up"){
+
+        document.documentElement.style.setProperty("--header-bg", "#8b1e3f");
+        document.querySelector(".controls").style.background = "#f8e9ed";
+
+    }else{
+
+        document.documentElement.style.setProperty("--header-bg", "#1f4e79");
+        document.querySelector(".controls").style.background = "#eaf4fc";
+
+    }
 
     renderTimetable();
 
