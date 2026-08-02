@@ -9,6 +9,7 @@
 ↓
 ■ timetable.js
 Webアプリが読むデータ。手で編集しないでVBAが出力する
+xlsmと同じフォルダに出るので移動すること
 
 ■ index.html  画面表示。
 
