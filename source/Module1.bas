@@ -1,7 +1,6 @@
 Option Explicit
 
 Public Sub ExportTimetableJS()
-
     Dim ws As Worksheet
     Dim js As String
     Dim filePath As String
@@ -79,11 +78,11 @@ Private Function ExportNoboriRows(ws As Worksheet) As String
     s = "        rows: [" & vbCrLf
     firstRow = True
 
-    For r = 8 To 31
+    For r = 3 To 31
 
         station = Trim(ws.Cells(r, 1).Value)
         If station = "" Then GoTo NextRow
-
+        If r = 7 Then GoTo NextRow
         If Trim(ws.Cells(r, 2).Value) <> "" Then
             station = station & " " & Trim(ws.Cells(r, 2).Value)
         End If
@@ -170,10 +169,10 @@ Private Function ExportKudariRows(ws As Worksheet) As String
     s = "        rows: [" & vbCrLf
     firstRow = True
 
-    For r = 44 To 64
+    For r = 35 To 64
         station = Trim(ws.Cells(r, 1).Value)
         If station = "" Then GoTo NextRow
-
+        If r = 43 Then GoTo NextRow
         If Trim(ws.Cells(r, 2).Value) <> "" Then
             station = station & " " & Trim(ws.Cells(r, 2).Value)
         End If
