@@ -139,13 +139,13 @@ Private Function ExportKudariTrains(ws As Worksheet) As String
             trainName = ""
         End If
 
-        If trainName <> "" Then
-            If Not firstTrain Then
-                s = s & "," & vbCrLf
-            End If
-            s = s & "            """ & trainName & """"
-            firstTrain = False
+        If Not firstTrain Then
+            s = s & "," & vbCrLf
         End If
+
+        s = s & "            """ & trainName & """"
+
+        firstTrain = False
 
     Next col
 
