@@ -23,12 +23,12 @@
     --header-text:#ffffff;
 
     /* 紙のような白 */
-    --station-bg:#f8f8f8;
+    --station-bg:#faf9f6;
     --border-color:#d8dde3;
 
     /* 列車種別 */
-    --bg-default:#f8f8f8;   /* 普通 */
-    --bg-local:#f4faf3;     /* 主要駅（あとで使用） */
+    --bg-default:#faf9f6;   /* 普通 */
+    --bg-local:#e6f1e7;     /* 主要駅（あとで使用） */
     --bg-hakuto:#eef7ff;    /* スーパーはくと */
     --bg-inaba:#fffbea;     /* スーパーいなば */
 }
@@ -45,7 +45,7 @@
 body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,
                 "Helvetica Neue",Arial,sans-serif;
-    background:#f8f8f8;
+    background:var(--bg-default);
     color:#334155;
     font-size:12px;
     height:100vh;
@@ -128,7 +128,7 @@ td{
 
 .thead-sticky th{
     position:sticky;
-    background:#f8f8f8;
+    background:var(--bg-default);
     z-index:10;
 }
 
@@ -161,7 +161,7 @@ table td:nth-child(2){
 
 .thead-sticky th:nth-child(1),
 .thead-sticky th:nth-child(2){
-    background:#f8f8f8;
+    background:var(--bg-default);
     z-index:15;
 }
 
@@ -192,6 +192,21 @@ table td:nth-child(2){
 th{
     line-height:1.2;
 }
+
+/* 紙の時刻表：寸法を固定し、縦色と横帯を分ける */
+body { height:100dvh; }
+.table-container { min-height:0; }
+table { table-layout:fixed; min-width:0; }
+th, td { height:30px; padding:4px 3px; }
+table th:first-child, table td:first-child { width:76px; min-width:76px; }
+table th:nth-child(2), table td:nth-child(2) { width:28px; min-width:28px; left:76px; }
+table th:nth-child(n+3), table td:nth-child(n+3) { width:64px; }
+.thead-sticky th { height:42px; border-bottom:2px solid #94a3b8; }
+tbody .major-station > td:nth-child(-n+2),
+tbody .major-station > .col-default { background:var(--bg-local); }
+tbody .major-station > td:first-child { box-shadow:inset 3px 0 #729779; }
+tbody .departure-row > td { border-top:1px dashed #91a397; }
+tbody .jr-boundary > td { border-top:3px double #718096; }
     </style>
 </head>
 
@@ -234,7 +249,7 @@ th{
 <script src="timetable.js"></script>
 
 <script>
-    const APP_VERSION = "0.2.1";
+    const APP_VERSION = "0.3.0";
     let currentDirection = "up";
 
 if ("serviceWorker" in navigator) {
@@ -299,7 +314,7 @@ function getTrainClass(train){
 
     if(t.includes("いなば")) return "col-inaba";
 
-    if(t.includes("D")) return "col-local";
+    // 普通列車は紙色。主要駅の横帯は行側で指定する。
 
     return "col-default";
 
@@ -318,6 +333,8 @@ function renderTimetable(){
     thead.innerHTML="";
     tbody.innerHTML="";
 
+    const table = document.getElementById("timetable-table");
+    table.style.width = (76 + 28 + data.trains.length * 64) + "px";
     createHeader(data,thead);
 
     createBody(data,tbody);
@@ -370,11 +387,20 @@ data.trains.forEach(train => {
 }
 function createBody(data, tbody){
 
-    data.rows.forEach(row => {
+    data.rows.forEach((row, rowIndex) => {
 
         const tr = document.createElement("tr");
 
-        const parts = row.station.split(" ");
+        const parts = row.station.trim().split(/\s+/);
+        const station = parts[0];
+        const previous = data.rows[rowIndex - 1]?.station.trim().split(/\s+/);
+        if (["智頭", "大原", "佐用", "上郡"].includes(station)) {
+            tr.classList.add("major-station");
+        }
+        if (previous && previous[0] === station && parts[1] === "発") {
+            tr.classList.add("departure-row");
+            if (["智頭", "上郡"].includes(station)) tr.classList.add("jr-boundary");
+        }
 
         let td = document.createElement("td");
         td.textContent = parts[0] || "";
