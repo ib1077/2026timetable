@@ -1,275 +1,185 @@
-<!DOCTYPE html>
-<html lang="ja" data-direction="up">
+<!doctype html>
+<html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#8b1e3f">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>智頭急行 時刻表</title>
-    <link rel="manifest" href="manifest.json?v=2026">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <style>
-        :root {
-            --direction-color:#8b1e3f;
-            --paper:#faf9f6;
-            --major:#e6f1e7;
-            --hakuto:#eef7ff;
-            --inaba:#fffbea;
-            --grid:#d8dde3;
-            --station-width:76px;
-            --event-width:24px;
-            --train-width:48px;
-        }
-        :root[data-direction="down"] { --direction-color:#1f4e79; }
-        :root[lang="en"] { --station-width:104px; --event-width:30px; }
-        * { box-sizing:border-box; margin:0; padding:0; }
-        html { height:100%; background:var(--direction-color); }
-        body {
-            height:100vh; height:100dvh; overflow:hidden;
-            display:flex; flex-direction:column;
-            background:var(--direction-color); color:#334155;
-            padding-top:env(safe-area-inset-top);
-            padding-left:env(safe-area-inset-left);
-            padding-right:env(safe-area-inset-right);
-            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-            font-size:12px;
-        }
-        header {
-            display:flex; align-items:center; justify-content:space-between; gap:6px;
-            min-height:44px; padding:0 8px; color:white; flex-shrink:0;
-        }
-        .brand { min-width:0; font-size:14px; font-weight:700; line-height:1.15; }
-        #app-version { display:block; font-size:9px; font-weight:400; opacity:.8; }
-        .language-switch { display:flex; flex-shrink:0; align-items:center; }
-        .lang-btn {
-            border:0; background:transparent; color:#e4dfe2;
-            width:40px; height:44px; font-size:12px; cursor:pointer;
-        }
-        .lang-btn[aria-pressed="true"] { color:white; font-weight:800; text-decoration:underline; text-underline-offset:5px; }
-        .language-switch span { opacity:.5; }
-        .controls { display:flex; gap:5px; padding:0 5px 5px; flex-shrink:0; }
-        .btn {
-            flex:1; height:46px; padding:0 4px; border:2px solid transparent; border-radius:5px;
-            background:#41464d; color:#aeb4bb; font-size:15px; font-weight:400; cursor:pointer;
-        }
-        .btn.active {
-            background:var(--direction-color); color:white; border-color:#ffffffc9;
-            font-size:26px; font-weight:800; box-shadow:inset 0 -2px white;
-        }
-        .direction-caption { display:block; font-size:9px; line-height:12px; font-weight:400; }
-        :root[lang="en"] .btn { font-size:12px; }
-        :root[lang="en"] .btn.active { font-size:16px; }
-        .chizu-section > .station-cell { box-shadow:inset 2px 0 var(--direction-color); padding-left:5px; }
-        button:focus-visible, .table-container:focus-visible { outline:3px solid #eebd47; outline-offset:-3px; }
-        .table-container { flex:1; min-height:0; overflow:auto; background:var(--paper); -webkit-overflow-scrolling:touch; }
-        table { table-layout:fixed; border-collapse:separate; border-spacing:0; }
-        th, td {
-            height:24px; padding:1px 2px; white-space:nowrap; text-align:center;
-            border-right:1px solid var(--grid); border-bottom:1px solid var(--grid);
-        }
-        .station-cell {
-            position:sticky; left:0; z-index:5; width:var(--station-width);
-            background:var(--paper); text-align:left; font-size:11px; font-weight:700;
-            border-right:1px solid #94a3b8;
-        }
-        .event-cell {
-            position:sticky; left:var(--station-width); z-index:5; width:var(--event-width);
-            background:var(--paper); font-size:10px; color:#64748b; border-right:2px solid #94a3b8;
-        }
-        .train-cell { width:var(--train-width); }
-        thead th { position:sticky; top:0; z-index:10; height:36px; font-size:11px; line-height:1.15; border-bottom:2px solid #94a3b8; }
-        thead .station-cell, thead .event-cell { z-index:15; }
-        .col-default { background:var(--paper); }
-        .col-hakuto { background:var(--hakuto); }
-        .col-inaba { background:var(--inaba); }
-        .number-note { flex-shrink:0; padding:3px 6px 1px; background:var(--paper); color:#64748b; font-size:10px; line-height:14px; }
-        thead th { border-top:4px solid var(--paper); height:40px; }
-        .time-cell.pass-mark { font-size:12px; font-weight:400; }
-        .time-cell { font-size:17px; line-height:20px; font-weight:600; font-variant-numeric:tabular-nums; }
-        .major-station > .station-cell, .major-station > .event-cell,
-        .major-station > .col-default { background:var(--major); }
-        .arrival-row > * { border-bottom:0; }
-        .departure-row > * { border-top:1px dashed #91a397; }
-        .station-start > * { border-top:1px solid #94a99a; }
-        .jr-boundary > * { border-top:3px double var(--direction-color); }
-        :root[lang="en"] .station-cell { white-space:normal; overflow-wrap:normal; font-size:11px; line-height:11px; }
-        footer { flex-shrink:0; height:calc(5px + env(safe-area-inset-bottom)); background:var(--direction-color); }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=yes">
+  <meta name="theme-color" content="#173b4c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="智頭線の勾配・構造物・速度を確認する路線図ビューア">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <title>智頭線 路線図ビューア</title>
 </head>
 <body>
-    <header>
-        <div class="brand"><span id="app-title">智頭急行 時刻表</span><span id="app-version"></span></div>
-        <div class="language-switch" role="group" aria-label="表示言語 / Language">
-            <button class="lang-btn" id="lang-ja" type="button" lang="ja" aria-label="日本語" aria-pressed="true" onclick="switchLanguage('ja')">JP</button>
-            <span aria-hidden="true">/</span>
-            <button class="lang-btn" id="lang-en" type="button" lang="en" aria-label="English" aria-pressed="false" onclick="switchLanguage('en')">EN</button>
-        </div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><strong>智頭線</strong><span id="modeTitle">路線図</span></div>
+      <nav class="mode-tabs" aria-label="表示モード">
+        <button class="mode-tab active" data-mode="route">路線</button>
+        <button class="mode-tab" data-mode="speed">＋速度</button>
+        <button class="mode-tab" data-mode="list">一覧</button>
+      </nav>
+      <div class="top-actions">
+        <button id="orientationBtn" class="icon-button" aria-label="縦横を切り替える" title="縦横切替">↻</button>
+        <button id="menuBtn" class="icon-button" aria-label="表示設定を開く" title="表示設定">☰</button>
+      </div>
     </header>
-    <div class="controls" role="group" id="direction-controls" aria-label="方向">
-        <button id="btn-up" class="btn active" type="button" aria-pressed="true" onclick="switchDirection('up')">のぼり</button>
-        <button id="btn-down" class="btn" type="button" aria-pressed="false" onclick="switchDirection('down')">くだり</button>
-    </div>
-    <div class="number-note" id="number-note">列車番号：智頭線内</div>
-    <div class="table-container" id="table-scroll" role="region" aria-label="時刻表" tabindex="0">
-        <table id="timetable-table" aria-label="智頭急行 時刻表">
-            <thead id="table-head"></thead>
-            <tbody id="table-body"></tbody>
-        </table>
-    </div>
-    <footer aria-hidden="true"></footer>
-    <script src="timetable.js"></script>
-    <script>
-        const APP_VERSION = "0.4.3";
-        const STATION_EN = {
-            "倉吉":"Kurayoshi", "鳥取":"Tottori", "郡家":"Koge", "智頭":"Chizu",
-            "恋山形":"Koi-Yamagata", "山郷":"Yamasato", "あわくら温泉":"Awakura-Onsen",
-            "西粟倉":"Nishi-Awakura", "大原":"Ohara", "宮本武蔵":"Miyamoto-Musashi",
-            "石井":"Ishii", "平福":"Hirafuku", "佐用":"Sayo", "久崎":"Kuzaki",
-            "河野原円心":"Konohara-Enshin", "苔縄":"Kokenawa", "上郡":"Kamigori",
-            "岡山":"Okayama", "姫路":"Himeji", "明石":"Akashi", "三ノ宮":"Sannomiya",
-            "大阪":"Osaka", "新大阪":"Shin-Osaka", "京都":"Kyoto"
-        };
-        const LABELS = {
-            ja:{title:"智頭急行 時刻表", up:"のぼり", down:"くだり", station:"駅名", arr:"着", dep:"発", direction:"方向", table:"時刻表"},
-            en:{title:"Chizu Express Timetable", up:"Chizu → Kamigori", down:"Kamigori → Chizu", station:"Station", arr:"Arr.", dep:"Dep.", direction:"Direction", table:"Timetable"}
-        };
-        let currentDirection = "up";
-        let currentLanguage = "ja";
-        try { if (localStorage.getItem("timetable-language") === "en") currentLanguage = "en"; } catch {}
 
-        window.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("app-version").textContent = "Ver." + APP_VERSION;
-            switchLanguage(currentLanguage);
-        });
-        if ("serviceWorker" in navigator && location.protocol !== "file:") {
-            window.addEventListener("load", () => {
-                navigator.serviceWorker.register("sw.js?v=2026").catch(console.error);
-            });
-        }
-        function switchDirection(dir) {
-            if (!["up", "down"].includes(dir)) return;
-            currentDirection = dir;
-            document.documentElement.dataset.direction = dir;
-            document.querySelector('meta[name="theme-color"]').content = dir === "up" ? "#8b1e3f" : "#1f4e79";
-            for (const direction of ["up", "down"]) {
-                const button = document.getElementById("btn-" + direction);
-                button.classList.toggle("active", direction === dir);
-                button.setAttribute("aria-pressed", String(direction === dir));
-            }
-            renderTimetable();
-        }
-        function switchLanguage(lang) {
-            if (!["ja", "en"].includes(lang)) return;
-            const scroll = document.getElementById("table-scroll");
-            const {scrollTop, scrollLeft} = scroll;
-            currentLanguage = lang;
-            document.documentElement.lang = lang;
-            try { localStorage.setItem("timetable-language", lang); } catch {}
-            const labels = LABELS[lang];
-            document.title = labels.title;
-            document.getElementById("number-note").textContent = lang === "en" ? "Train numbers: Chizu Line section" : "列車番号：智頭線内";
-            document.getElementById("app-title").textContent = labels.title;
-            document.getElementById("btn-up").textContent = labels.up;
-            document.getElementById("btn-down").textContent = labels.down;
-            if (lang === "en") {
-                for (const dir of ["up", "down"]) {
-                    const caption = document.createElement("span");
-                    caption.className = "direction-caption";
-                    caption.textContent = "Chizu Line";
-                    document.getElementById("btn-" + dir).prepend(caption);
-                }
-            }
-            document.getElementById("direction-controls").setAttribute("aria-label", labels.direction);
-            scroll.setAttribute("aria-label", labels.table);
-            for (const language of ["ja", "en"]) {
-                document.getElementById("lang-" + language).setAttribute("aria-pressed", String(language === lang));
-            }
-            switchDirection(currentDirection);
-            scroll.scrollTop = scrollTop;
-            scroll.scrollLeft = scrollLeft;
-        }
-        function getTrainClass(train) {
-            if (train.includes("はくと")) return "col-hakuto";
-            if (train.includes("いなば")) return "col-inaba";
-            return "col-default";
-        }
-        function renderTimetable() {
-            const data = currentDirection === "up" ? timetable.nobori : timetable.kudari;
-            const labels = LABELS[currentLanguage];
-            const table = document.getElementById("timetable-table");
-            // CSSの実寸を使い、固定駅名欄と列車欄のずれを防ぐ。
-            const style = getComputedStyle(document.documentElement);
-            const fixedWidth = parseFloat(style.getPropertyValue("--station-width")) + parseFloat(style.getPropertyValue("--event-width"));
-            const trainWidth = parseFloat(style.getPropertyValue("--train-width"));
-            table.style.width = (fixedWidth + data.trains.length * trainWidth) + "px";
-            table.setAttribute("aria-label", labels.title + " · " + labels[currentDirection]);
-            const head = document.getElementById("table-head");
-            const body = document.getElementById("table-body");
-            head.replaceChildren(); body.replaceChildren();
-            const header = document.createElement("tr");
-            const stationHeader = document.createElement("th");
-            stationHeader.className = "station-cell"; stationHeader.scope = "col";
-            stationHeader.textContent = labels.station; header.appendChild(stationHeader);
-            const eventHeader = document.createElement("th");
-            eventHeader.className = "event-cell"; eventHeader.scope = "col";
-            eventHeader.setAttribute("aria-label", labels.arr + " / " + labels.dep); header.appendChild(eventHeader);
-            for (const train of data.trains) {
-                const cell = document.createElement("th");
-                cell.scope = "col"; cell.className = "train-cell " + getTrainClass(train);
-                const match = train.match(/^(?:スーパー)?(はくと|いなば)(.*)$/);
-                if (match) {
-                    const name = currentLanguage === "en" ? (match[1] === "はくと" ? "Hakuto" : "Inaba") : match[1];
-                    const number = currentLanguage === "en" ? match[2].replace("号", "") : match[2];
-                    cell.append(name, document.createElement("br"), number);
-                    cell.setAttribute("aria-label", currentLanguage === "en" ? "Super " + name + " " + number : train);
-                } else cell.textContent = train;
-                header.appendChild(cell);
-            }
-            head.appendChild(header);
-            const entryStation = currentDirection === "up" ? "智頭" : "上郡";
-            const exitStation = currentDirection === "up" ? "上郡" : "智頭";
-            const sectionStart = data.rows.findIndex(row => row.station.trim().split(/\s+/).join(" ") === entryStation + " 発");
-            const sectionEnd = data.rows.findIndex(row => row.station.trim().split(/\s+/).join(" ") === exitStation + " 着");
-            data.rows.forEach((row, i) => {
-                const [station, event = ""] = row.station.trim().split(/\s+/);
-                const previous = data.rows[i - 1]?.station.trim().split(/\s+/)[0];
-                const next = data.rows[i + 1]?.station.trim().split(/\s+/)[0];
-                const tr = document.createElement("tr");
-                if (["智頭", "大原", "佐用", "上郡"].includes(station) && i >= sectionStart && i <= sectionEnd) {
-                    tr.classList.add("major-station");
-                    if (previous !== station) tr.classList.add("station-start");
-                }
-                if (event === "着" && next === station) tr.classList.add("arrival-row");
-                if (event === "発" && previous === station) {
-                    tr.classList.add("departure-row");
-                    if (["智頭", "上郡"].includes(station)) tr.classList.add("jr-boundary");
-                }
-                const name = document.createElement("th");
-                name.scope = "row"; name.className = "station-cell";
-                name.textContent = currentLanguage === "en" ? (STATION_EN[station] || station) : station;
-                if (sectionStart >= 0 && sectionEnd >= sectionStart && i >= sectionStart && i <= sectionEnd) {
-                    tr.classList.add("chizu-section");
-                }
-                tr.appendChild(name);
-                const eventCell = document.createElement("td");
-                eventCell.className = "event-cell";
-                eventCell.textContent = event === "着" ? labels.arr : event === "発" ? labels.dep : event;
-                tr.appendChild(eventCell);
-                row.times.forEach((time, index) => {
-                    const cell = document.createElement("td");
-                    cell.className = "time-cell train-cell " + getTrainClass(data.trains[index] || "");
-                    const isLimitedExpress = getTrainClass(data.trains[index] || "") !== "col-default";
-                    if (time === "↓" && isLimitedExpress) {
-                        cell.textContent = "レ";
-                        cell.classList.add("pass-mark");
-                        cell.setAttribute("aria-label", currentLanguage === "en" ? "Passes without stopping" : "通過");
-                    } else cell.textContent = time;
-                    tr.appendChild(cell);
-                });
-                body.appendChild(tr);
-            });
-        }
-    </script>
+    <main class="main-stage">
+      <section id="routeWorkspace" class="workspace" aria-label="路線図">
+        <div class="status-pills"><button id="fitBtn" class="status-button">全体</button><span>1本指で縦横移動</span></div>
+        <div id="railViewport" class="rail-viewport">
+          <div id="routeCanvas" class="route-canvas">
+            <svg id="railSvg" role="img" aria-label="智頭線の連続路線図"></svg>
+          </div>
+        </div>
+        <div id="assetStrip" class="route-asset-strip" aria-label="路線図と同じ縮尺の設備帯">
+          <canvas id="assetStripCanvas"></canvas>
+          <div class="asset-strip-lanes" aria-hidden="true"><span>曲線</span><span>下り</span><span>上り</span><span>無電源・P</span></div>
+        </div>
+        <div id="speedOverlayTools" class="speed-overlay-tools hidden" aria-label="速度カーブ選択">
+          <select id="trainSelect" aria-label="速度を表示する列車"><option value="7000">7000</option><option value="187">187</option><option value="3500">3500</option></select>
+          <label class="line-toggle up"><input type="checkbox" data-speed="up" checked><span>上り</span></label>
+          <label class="line-toggle down"><input type="checkbox" data-speed="down"><span>下り</span></label>
+          <small>0–150 km/h</small>
+        </div>
+        <div class="zoom-buttons" aria-label="拡大縮小">
+          <button id="zoomInBtn" aria-label="拡大">＋</button>
+          <button id="zoomOutBtn" aria-label="縮小">−</button>
+        </div>
+        <button id="backToListBtn" class="back-list-button hidden">↑ 一覧へ</button>
+        <div id="gestureHint" class="gesture-hint">1本指で縦横へ　2本指で拡大・縮小</div>
+      </section>
+
+      <section id="speedWorkspace" class="workspace speed-workspace hidden" aria-label="速度モード">
+        <div class="speed-tools">
+          <strong>速度カーブ</strong>
+          <div class="train-grid" aria-label="列車と方向">
+            <div class="train-row"><span>7000</span></div>
+            <div class="train-row"><span>187</span></div>
+            <div class="train-row"><span>3500</span></div>
+          </div>
+        </div>
+        <div id="speedViewport" class="rail-viewport speed-viewport"><svg id="speedSvg" role="img" aria-label="選択列車の上り下り速度カーブ"></svg></div>
+      </section>
+
+      <section id="assetWorkspace" class="workspace asset-workspace hidden" aria-label="構造物・設備一覧">
+        <div class="asset-toolbar">
+          <div><strong>構造物・設備一覧</strong><span id="assetCount">951件・距離順</span></div>
+          <label class="asset-search"><span>検索</span><input id="assetSearch" type="search" placeholder="名称・信号名・種類など"></label>
+        </div>
+        <div id="assetTableWrap" class="asset-table-wrap">
+          <table class="asset-table">
+            <thead><tr><th>距離</th><th>距離順</th><th>No.</th><th>カテゴリ</th><th>種別1</th><th>種別2</th><th>種別3</th></tr></thead>
+            <tbody id="assetRows"></tbody>
+          </table>
+        </div>
+        <div id="assetSelection" class="asset-selection hidden">
+          <div><strong id="assetSelectionName">設備を選択</strong><span id="assetSelectionKm"></span></div>
+          <button id="showOnRouteBtn">路線図へ ↓</button>
+        </div>
+      </section>
+
+      <section class="route-navigator" aria-label="全線の表示位置">
+        <span class="navigator-end">0k</span>
+        <input id="positionSlider" type="range" min="0" max="56.1" step="0.01" value="28.05" aria-label="表示する距離">
+        <output id="positionOutput" for="positionSlider">28k050m</output>
+      </section>
+
+      <section class="bottom-dock" aria-label="表示パネル">
+        <section id="infoBar" class="info-bar" aria-live="polite" aria-hidden="true">
+          <button id="infoClose" class="info-close" aria-label="詳細を閉じる">×</button>
+          <div class="info-main"><strong id="infoName">詳細情報</strong><span id="infoKm">設備を選択してください</span></div>
+          <div class="info-detail"><span id="infoType">速度線などをタップ</span><span id="infoRelation">構造物をタップすると一覧の該当行へ移動します</span></div>
+        </section>
+        <section id="timePanel" class="time-panel" aria-label="所要時間計算" aria-hidden="true">
+          <div class="time-head">
+            <div><strong>所要時間</strong><span id="timeRangeLabel">全線　0k000m ― 56k100m</span></div>
+            <button id="timeClose" class="info-close" aria-label="時間計算を閉じる">×</button>
+          </div>
+          <div class="time-results" aria-live="polite">
+            <div class="time-result up"><span id="upTimeTrain">7000 上り</span><strong id="upTimeResult">--:--</strong><small id="upAverageResult">平均 -- km/h</small></div>
+            <div class="time-result down"><span id="downTimeTrain">7000 下り</span><strong id="downTimeResult">--:--</strong><small id="downAverageResult">平均 -- km/h</small></div>
+            <div class="time-distance"><span>計算距離</span><strong id="timeDistanceResult">56.100 km</strong><small>100mごとの速度から計算</small></div>
+          </div>
+          <div class="time-methods" role="tablist" aria-label="区間指定方法">
+            <button class="time-method active" data-time-method="all">全線</button>
+            <button class="time-method" data-time-method="station">駅間</button>
+            <button class="time-method" data-time-method="express">特急</button>
+            <button class="time-method" data-time-method="distance">距離</button>
+          </div>
+          <div class="time-controls">
+            <div class="time-control active" data-time-control="all"><span>上郡側 0k000m から 智頭側 56k100m まで</span></div>
+            <div class="time-control station-control" data-time-control="station">
+              <label><span>開始駅</span><select id="startStation"></select></label><span class="range-arrow">―</span><label><span>終了駅</span><select id="endStation"></select></label>
+            </div>
+            <div class="time-control express-control" data-time-control="express">
+              <span>特急停車駅間</span><div id="expressPresets" class="express-presets"></div>
+            </div>
+            <div class="time-control distance-control" data-time-control="distance">
+              <label><span>開始</span><span class="km-entry"><input id="startKm" type="number" min="0" max="56" value="0" inputmode="numeric"><b>k</b><input id="startM" type="number" min="0" max="999" value="0" inputmode="numeric"><b>m</b></span></label>
+              <span class="range-arrow">―</span>
+              <label><span>終了</span><span class="km-entry"><input id="endKm" type="number" min="0" max="56" value="56" inputmode="numeric"><b>k</b><input id="endM" type="number" min="0" max="999" value="100" inputmode="numeric"><b>m</b></span></label>
+            </div>
+          </div>
+          <div class="time-note">停車時間は含みません。速度曲線上の値を区間平均して算出します。</div>
+        </section>
+        <nav class="dock-tabs" aria-label="下部表示切替">
+          <button id="detailDockBtn" class="dock-button" aria-expanded="false"><span class="dock-icon">ⓘ</span><span class="dock-label">詳細</span><small id="dockDetailHint">選択なし</small></button>
+          <button id="assetStripToggle" class="dock-button" aria-expanded="false"><span class="dock-icon">▤</span><span class="dock-label">設備</span><small id="assetDockState">非表示</small></button>
+          <button id="timeDockBtn" class="dock-button" aria-expanded="false"><span class="dock-icon">◷</span><span class="dock-label">時間</span><small id="timeDockState">全線を計算</small></button>
+        </nav>
+      </section>
+    </main>
+
+    <aside id="settings" class="settings" aria-label="表示設定" aria-hidden="true">
+      <div class="settings-head"><div><strong>表示設定</strong><span>各項目を 自動／表示／非表示</span></div><button id="menuClose" class="icon-button dark" aria-label="設定を閉じる">×</button></div>
+      <div id="layerSettings" class="layer-settings"></div>
+      <button id="resetLayers" class="reset-button">すべて自動に戻す</button>
+      <button id="printSettingsBtn" class="print-open-button"><span>▣</span><strong>印刷・PDF</strong><small>A4縦6段／A4横1段</small></button>
+      <div class="browser-note">動作基準：Chrome／Edge／iPhone Safari</div>
+    </aside>
+    <button id="scrim" class="scrim hidden" aria-label="設定を閉じる"></button>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <button id="printScrim" class="print-scrim hidden" aria-label="印刷設定を閉じる"></button>
+  <section id="printDialog" class="print-dialog" role="dialog" aria-modal="true" aria-labelledby="printDialogTitle" aria-hidden="true">
+    <div class="print-dialog-head"><div><strong id="printDialogTitle">印刷・PDF</strong><span>紙に合わせて路線図を整列します</span></div><button id="printDialogClose" class="icon-button dark" aria-label="印刷設定を閉じる">×</button></div>
+    <div class="print-layouts" aria-label="印刷形式">
+      <button class="print-layout active" data-print-layout="full"><span class="page-shape portrait"><i></i><i></i><i></i><i></i><i></i><i></i></span><strong>A4縦・全線6段</strong><small>0k000m～56k100m</small></button>
+      <button class="print-layout" data-print-layout="section"><span class="page-shape landscape"><i></i></span><strong>A4横・指定区間1段</strong><small>短い区間を大きく</small></button>
+    </div>
+    <div id="printSectionControls" class="print-section-controls hidden">
+      <div class="print-range-tabs">
+        <button class="active" data-print-range="station">駅間</button><button data-print-range="distance">距離</button>
+      </div>
+      <div class="print-range-control active" data-print-range-control="station">
+        <label><span>開始駅</span><select id="printStartStation"></select></label><span>―</span><label><span>終了駅</span><select id="printEndStation"></select></label>
+      </div>
+      <div class="print-range-control" data-print-range-control="distance">
+        <label><span>開始</span><span class="km-entry"><input id="printStartKm" type="number" min="0" max="56" value="0" inputmode="numeric"><b>k</b><input id="printStartM" type="number" min="0" max="999" value="0" inputmode="numeric"><b>m</b></span></label>
+        <span>―</span>
+        <label><span>終了</span><span class="km-entry"><input id="printEndKm" type="number" min="0" max="56" value="17" inputmode="numeric"><b>k</b><input id="printEndM" type="number" min="0" max="999" value="170" inputmode="numeric"><b>m</b></span></label>
+      </div>
+      <button id="useTimeRangeBtn" class="use-time-range">時間計算で選んだ区間を使う</button>
+    </div>
+    <button id="printTimeToggle" class="print-time-toggle" type="button" aria-pressed="false" disabled><span>◷</span><strong>計算値を表示</strong><small>速度表示時だけ、6段目右側の空白へ表示</small></button>
+    <div class="print-rule"><strong>表示内容</strong><span>駅・トンネル・勾配・曲線・信号・地上子・速度は、現在の画面で表示されている項目を引き継ぎます。</span></div>
+    <button id="startPrintBtn" class="start-print-button">印刷プレビューへ</button>
+    <p class="print-help">印刷画面でプリンターを選ぶと紙へ、「PDFに保存」を選ぶとPDFになります。</p>
+  </section>
+
+  <section id="printSheet" class="print-sheet" aria-hidden="true">
+    <header class="print-sheet-head"><strong>路線図</strong><span id="printSpeedTitle" class="hidden"></span></header>
+    <div id="printRows" class="print-rows"></div>
+    <footer id="printSheetFooter" class="print-sheet-footer hidden"></footer>
+  </section>
+  <script src="route-data.js"></script>
+  <script src="speed-data.js"></script>
+  <script src="asset-data.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
