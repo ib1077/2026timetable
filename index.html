@@ -57,6 +57,10 @@
             background:var(--direction-color); color:white; border-color:#ffffffc9;
             font-size:26px; font-weight:800; box-shadow:inset 0 -2px white;
         }
+        .direction-caption { display:block; font-size:9px; line-height:12px; font-weight:400; }
+        :root[lang="en"] .btn { font-size:12px; }
+        :root[lang="en"] .btn.active { font-size:16px; }
+        .chizu-section > .station-cell { box-shadow:inset 2px 0 var(--direction-color); padding-left:5px; }
         button:focus-visible, .table-container:focus-visible { outline:3px solid #eebd47; outline-offset:-3px; }
         .table-container { flex:1; min-height:0; overflow:auto; background:var(--paper); -webkit-overflow-scrolling:touch; }
         table { table-layout:fixed; border-collapse:separate; border-spacing:0; }
@@ -79,13 +83,16 @@
         .col-default { background:var(--paper); }
         .col-hakuto { background:var(--hakuto); }
         .col-inaba { background:var(--inaba); }
+        .number-note { flex-shrink:0; padding:3px 6px 1px; background:var(--paper); color:#64748b; font-size:10px; line-height:14px; }
+        thead th { border-top:4px solid var(--paper); height:40px; }
+        .time-cell.pass-mark { font-size:12px; font-weight:400; }
         .time-cell { font-size:17px; line-height:20px; font-weight:600; font-variant-numeric:tabular-nums; }
         .major-station > .station-cell, .major-station > .event-cell,
         .major-station > .col-default { background:var(--major); }
         .arrival-row > * { border-bottom:0; }
         .departure-row > * { border-top:1px dashed #91a397; }
         .station-start > * { border-top:1px solid #94a99a; }
-        .jr-boundary > * { border-top:3px double #718096; }
+        .jr-boundary > * { border-top:3px double var(--direction-color); }
         :root[lang="en"] .station-cell { white-space:normal; overflow-wrap:normal; font-size:11px; line-height:11px; }
         footer { flex-shrink:0; height:calc(5px + env(safe-area-inset-bottom)); background:var(--direction-color); }
     </style>
@@ -103,6 +110,7 @@
         <button id="btn-up" class="btn active" type="button" aria-pressed="true" onclick="switchDirection('up')">のぼり</button>
         <button id="btn-down" class="btn" type="button" aria-pressed="false" onclick="switchDirection('down')">くだり</button>
     </div>
+    <div class="number-note" id="number-note">列車番号：智頭線内</div>
     <div class="table-container" id="table-scroll" role="region" aria-label="時刻表" tabindex="0">
         <table id="timetable-table" aria-label="智頭急行 時刻表">
             <thead id="table-head"></thead>
@@ -112,7 +120,7 @@
     <footer aria-hidden="true"></footer>
     <script src="timetable.js"></script>
     <script>
-        const APP_VERSION = "0.4.0";
+        const APP_VERSION = "0.4.3";
         const STATION_EN = {
             "倉吉":"Kurayoshi", "鳥取":"Tottori", "郡家":"Koge", "智頭":"Chizu",
             "恋山形":"Koi-Yamagata", "山郷":"Yamasato", "あわくら温泉":"Awakura-Onsen",
@@ -124,7 +132,7 @@
         };
         const LABELS = {
             ja:{title:"智頭急行 時刻表", up:"のぼり", down:"くだり", station:"駅名", arr:"着", dep:"発", direction:"方向", table:"時刻表"},
-            en:{title:"Chizu Express Timetable", up:"Up", down:"Down", station:"Station", arr:"Arr.", dep:"Dep.", direction:"Direction", table:"Timetable"}
+            en:{title:"Chizu Express Timetable", up:"Chizu → Kamigori", down:"Kamigori → Chizu", station:"Station", arr:"Arr.", dep:"Dep.", direction:"Direction", table:"Timetable"}
         };
         let currentDirection = "up";
         let currentLanguage = "ja";
@@ -160,9 +168,18 @@
             try { localStorage.setItem("timetable-language", lang); } catch {}
             const labels = LABELS[lang];
             document.title = labels.title;
+            document.getElementById("number-note").textContent = lang === "en" ? "Train numbers: Chizu Line section" : "列車番号：智頭線内";
             document.getElementById("app-title").textContent = labels.title;
             document.getElementById("btn-up").textContent = labels.up;
             document.getElementById("btn-down").textContent = labels.down;
+            if (lang === "en") {
+                for (const dir of ["up", "down"]) {
+                    const caption = document.createElement("span");
+                    caption.className = "direction-caption";
+                    caption.textContent = "Chizu Line";
+                    document.getElementById("btn-" + dir).prepend(caption);
+                }
+            }
             document.getElementById("direction-controls").setAttribute("aria-label", labels.direction);
             scroll.setAttribute("aria-label", labels.table);
             for (const language of ["ja", "en"]) {
@@ -210,12 +227,16 @@
                 header.appendChild(cell);
             }
             head.appendChild(header);
+            const entryStation = currentDirection === "up" ? "智頭" : "上郡";
+            const exitStation = currentDirection === "up" ? "上郡" : "智頭";
+            const sectionStart = data.rows.findIndex(row => row.station.trim().split(/\s+/).join(" ") === entryStation + " 発");
+            const sectionEnd = data.rows.findIndex(row => row.station.trim().split(/\s+/).join(" ") === exitStation + " 着");
             data.rows.forEach((row, i) => {
                 const [station, event = ""] = row.station.trim().split(/\s+/);
                 const previous = data.rows[i - 1]?.station.trim().split(/\s+/)[0];
                 const next = data.rows[i + 1]?.station.trim().split(/\s+/)[0];
                 const tr = document.createElement("tr");
-                if (["智頭", "大原", "佐用", "上郡"].includes(station)) {
+                if (["智頭", "大原", "佐用", "上郡"].includes(station) && i >= sectionStart && i <= sectionEnd) {
                     tr.classList.add("major-station");
                     if (previous !== station) tr.classList.add("station-start");
                 }
@@ -227,6 +248,9 @@
                 const name = document.createElement("th");
                 name.scope = "row"; name.className = "station-cell";
                 name.textContent = currentLanguage === "en" ? (STATION_EN[station] || station) : station;
+                if (sectionStart >= 0 && sectionEnd >= sectionStart && i >= sectionStart && i <= sectionEnd) {
+                    tr.classList.add("chizu-section");
+                }
                 tr.appendChild(name);
                 const eventCell = document.createElement("td");
                 eventCell.className = "event-cell";
@@ -235,7 +259,12 @@
                 row.times.forEach((time, index) => {
                     const cell = document.createElement("td");
                     cell.className = "time-cell train-cell " + getTrainClass(data.trains[index] || "");
-                    cell.textContent = time;
+                    const isLimitedExpress = getTrainClass(data.trains[index] || "") !== "col-default";
+                    if (time === "↓" && isLimitedExpress) {
+                        cell.textContent = "レ";
+                        cell.classList.add("pass-mark");
+                        cell.setAttribute("aria-label", currentLanguage === "en" ? "Passes without stopping" : "通過");
+                    } else cell.textContent = time;
                     tr.appendChild(cell);
                 });
                 body.appendChild(tr);
