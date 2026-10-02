@@ -1,4 +1,4 @@
-const CACHE_NAME = "timetable-v0.4.3";
+const CACHE_NAME = "timetable-v0.4.4-trial";
 
 const ASSETS = [
     "./",
@@ -6,7 +6,12 @@ const ASSETS = [
     "timetable.js",
     "manifest.json",
     "icon-192.png",
-    "icon-512.png"
+    "icon-512.png",
+    "paper-menu.css",
+    "paper-menu.js",
+    "paper/2027_timetable_static.html",
+    "paper/2027_timetable_scroll.html",
+    "paper/2027_timetable_en.html"
 ];
 
 self.addEventListener("install", event => {

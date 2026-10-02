@@ -9,6 +9,7 @@
     <title>智頭急行 時刻表</title>
     <link rel="manifest" href="manifest.json?v=2026">
     <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="paper-menu.css">
     <style>
         :root {
             --direction-color:#8b1e3f;
@@ -99,7 +100,18 @@
 </head>
 <body>
     <header>
-        <div class="brand"><span id="app-title">智頭急行 時刻表</span><span id="app-version"></span></div>
+        <div class="brand">
+            <details class="paper-picker" id="paper-picker">
+                <summary aria-label="紙時刻表を開く（試作）" aria-controls="paper-options">📋</summary>
+                <div class="paper-options" id="paper-options">
+                    <p>紙時刻表 · 試作</p>
+                    <button type="button" data-paper="paper/2027_timetable_static.html">○ 紙時刻表をHTML一枚にしたもの</button>
+                    <button type="button" data-paper="paper/2027_timetable_scroll.html">○ 駅名・時刻をスクロール固定したもの</button>
+                    <button type="button" data-paper="paper/2027_timetable_en.html">○ 英字版にしたもの</button>
+                </div>
+            </details>
+            <div><span id="app-title">智頭急行</span><span id="app-version"></span></div>
+        </div>
         <div class="language-switch" role="group" aria-label="表示言語 / Language">
             <button class="lang-btn" id="lang-ja" type="button" lang="ja" aria-label="日本語" aria-pressed="true" onclick="switchLanguage('ja')">JP</button>
             <span aria-hidden="true">/</span>
@@ -118,9 +130,17 @@
         </table>
     </div>
     <footer aria-hidden="true"></footer>
+    <dialog id="paper-view" aria-labelledby="paper-label">
+        <div class="paper-toolbar">
+            <button type="button" id="paper-close">← appに戻る</button>
+            <span id="paper-label">紙時刻表（試作）</span>
+        </div>
+        <iframe id="paper-frame" title="紙時刻表" src="about:blank"></iframe>
+    </dialog>
+    <script src="paper-menu.js"></script>
     <script src="timetable.js"></script>
     <script>
-        const APP_VERSION = "0.4.3";
+        const APP_VERSION = "0.4.4-trial";
         const STATION_EN = {
             "倉吉":"Kurayoshi", "鳥取":"Tottori", "郡家":"Koge", "智頭":"Chizu",
             "恋山形":"Koi-Yamagata", "山郷":"Yamasato", "あわくら温泉":"Awakura-Onsen",
@@ -169,7 +189,7 @@
             const labels = LABELS[lang];
             document.title = labels.title;
             document.getElementById("number-note").textContent = lang === "en" ? "Train numbers: Chizu Line section" : "列車番号：智頭線内";
-            document.getElementById("app-title").textContent = labels.title;
+            document.getElementById("app-title").textContent = "智頭急行";
             document.getElementById("btn-up").textContent = labels.up;
             document.getElementById("btn-down").textContent = labels.down;
             if (lang === "en") {
