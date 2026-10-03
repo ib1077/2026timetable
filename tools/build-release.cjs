@@ -1,0 +1,10 @@
+const fs = require('fs'), path = require('path'), crypto = require('crypto');
+const root = path.resolve(__dirname, '..');
+const hash = value => crypto.createHash('sha256').update(value).digest('hex');
+const version = fs.readFileSync(path.join(root, 'app-version.js'), 'utf8').match(/APP_VERSION\s*=\s*"([^"]+)"/)[1];
+const files = ['index.html','app-version.js','timetable.js','manifest.json','icon-192.png','icon-512.png','paper-menu.css','paper-menu.js','update.css','update.js', ...['static','scroll','en'].map(kind => `paper/2027_timetable_${kind}.html`)];
+const assets = Object.fromEntries(files.map(file => [file, hash(fs.readFileSync(path.join(root, file)))]));
+const release = {version, build:hash(JSON.stringify(assets)).slice(0,16), assets};
+const template = fs.readFileSync(path.join(__dirname, 'sw-template.js'), 'utf8');
+fs.writeFileSync(path.join(root, 'sw.js'), template.replace('__RELEASE__', JSON.stringify(release, null, 2)));
+console.log(`Built ${version}: ${files.length} offline files, ${release.build}`);

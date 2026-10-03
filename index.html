@@ -10,6 +10,7 @@
     <link rel="manifest" href="manifest.json?v=2026">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="stylesheet" href="paper-menu.css">
+    <link rel="stylesheet" href="update.css">
     <style>
         :root {
             --direction-color:#8b1e3f;
@@ -112,6 +113,7 @@
             </details>
             <div><span id="app-title">智頭急行</span><span id="app-version"></span></div>
         </div>
+        <div class="update-area"><button type="button" id="update-button">更新して再起動</button></div>
         <div class="language-switch" role="group" aria-label="表示言語 / Language">
             <button class="lang-btn" id="lang-ja" type="button" lang="ja" aria-label="日本語" aria-pressed="true" onclick="switchLanguage('ja')">JP</button>
             <span aria-hidden="true">/</span>
@@ -137,10 +139,12 @@
         </div>
         <iframe id="paper-frame" title="紙時刻表" src="about:blank"></iframe>
     </dialog>
+    <div id="update-status" role="status" aria-live="polite"></div>
+    <script src="app-version.js"></script>
     <script src="paper-menu.js"></script>
+    <script src="update.js"></script>
     <script src="timetable.js"></script>
     <script>
-        const APP_VERSION = "0.4.4-trial";
         const STATION_EN = {
             "倉吉":"Kurayoshi", "鳥取":"Tottori", "郡家":"Koge", "智頭":"Chizu",
             "恋山形":"Koi-Yamagata", "山郷":"Yamasato", "あわくら温泉":"Awakura-Onsen",
@@ -162,11 +166,6 @@
             document.getElementById("app-version").textContent = "Ver." + APP_VERSION;
             switchLanguage(currentLanguage);
         });
-        if ("serviceWorker" in navigator && location.protocol !== "file:") {
-            window.addEventListener("load", () => {
-                navigator.serviceWorker.register("sw.js?v=2026").catch(console.error);
-            });
-        }
         function switchDirection(dir) {
             if (!["up", "down"].includes(dir)) return;
             currentDirection = dir;

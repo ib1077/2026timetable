@@ -1,0 +1,5 @@
+.update-area { margin-left:auto; flex-shrink:0; }
+#update-button { border:1px solid #ffffff70; border-radius:4px; padding:5px 6px; min-height:32px; background:transparent; color:white; font-size:10px; cursor:pointer; }
+#update-button:disabled { opacity:.65; cursor:wait; }
+#update-status { position:fixed; z-index:50; left:8px; right:8px; bottom:calc(12px + env(safe-area-inset-bottom)); width:fit-content; max-width:calc(100% - 16px); margin:auto; padding:10px 14px; border:1px solid #b5b9be; border-radius:5px; background:#faf9f6; color:#334155; font-size:12px; box-shadow:0 2px 12px #0002; }
+#update-status:empty { display:none; }
