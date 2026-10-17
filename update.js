@@ -1,7 +1,7 @@
 (() => {
   const button = document.getElementById('update-button');
-  const status = document.getElementById('update-status');
-  const say = text => { status.textContent = text; };
+  button.textContent = 'Ver.' + APP_VERSION;
+  const showButtonState = text => { button.textContent = text; };
   let registration;
   let applying = false;
   let hadController = !!navigator.serviceWorker?.controller;
@@ -45,24 +45,23 @@
         if (reg.installing) await installed(reg.installing);
         await timeout(navigator.serviceWorker.ready);
         await message(reg.active, 'CHECK_READY');
-        say('オフライン利用の準備ができました');
-        setTimeout(() => { if (!applying && !button.disabled) say(''); }, 5000);
       }
-    }).catch(() => say('オフライン保存を完了できませんでした。通信できるときに「更新して再起動」を押してください'));
+    }).catch(() => { button.title = 'オフライン保存を完了できませんでした。通信できるときに更新して再起動してください'; });
   });
   button.addEventListener('click', async () => {
     button.disabled = true;
-    say('更新を確認しています…');
+    button.title = '';
+    showButtonState('更新確認中…');
     try {
       const reg = await timeout(register());
       await timeout(reg.update());
       if (reg.installing) {
-        say('新版を取得しています…');
+        showButtonState('取得中…');
         await installed(reg.installing);
       }
       if (reg.waiting) {
         await message(reg.waiting, 'CHECK_READY');
-        say('取得完了。新版に切り替えています…');
+        showButtonState('切替中…');
         applying = true;
         await message(reg.waiting, 'APPLY_UPDATE');
         // controllerchange normally reloads. Check the controller if its event was delayed.
@@ -72,12 +71,13 @@
         else throw new Error('activation pending');
       } else {
         await message(reg.active, 'CHECK_READY');
-        say('最新版です。再起動します…');
+        showButtonState('再起動中…');
         location.reload();
       }
     } catch (error) {
       applying = false;
-      say('更新できませんでした。現在のバージョンを使用します');
+      showButtonState('更新失敗・再試行');
+      button.title = '更新できませんでした。現在のバージョンを使用します';
       button.disabled = false;
     }
   });

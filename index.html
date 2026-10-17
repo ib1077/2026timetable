@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>智頭急行 時刻表</title>
     <link rel="manifest" href="manifest.json?v=2026">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png?v=0.4.8">
     <link rel="stylesheet" href="paper-menu.css">
     <link rel="stylesheet" href="update.css">
     <style>
@@ -42,7 +42,6 @@
             min-height:44px; padding:0 8px; color:white; flex-shrink:0;
         }
         .brand { min-width:0; font-size:14px; font-weight:700; line-height:1.15; }
-        #app-version { display:block; font-size:9px; font-weight:400; opacity:.8; }
         .language-switch { display:flex; flex-shrink:0; align-items:center; }
         .lang-btn {
             border:0; background:transparent; color:#e4dfe2;
@@ -111,9 +110,9 @@
                     <button type="button" data-paper="paper/2027_timetable_en.html">○ 英字版にしたもの</button>
                 </div>
             </details>
-            <div><span id="app-title">智頭急行</span><span id="app-version"></span></div>
+            <div><span id="app-title">智頭急行</span></div>
         </div>
-        <div class="update-area"><button type="button" id="update-button">更新して再起動</button></div>
+        <div class="update-area"><button type="button" id="update-button" aria-label="更新して再起動">Ver.0.4.8-trial</button></div>
         <div class="language-switch" role="group" aria-label="表示言語 / Language">
             <button class="lang-btn" id="lang-ja" type="button" lang="ja" aria-label="日本語" aria-pressed="true" onclick="switchLanguage('ja')">JP</button>
             <span aria-hidden="true">/</span>
@@ -139,7 +138,6 @@
         </div>
         <iframe id="paper-frame" title="紙時刻表" src="about:blank"></iframe>
     </dialog>
-    <div id="update-status" role="status" aria-live="polite"></div>
     <script src="app-version.js"></script>
     <script src="paper-menu.js"></script>
     <script src="update.js"></script>
@@ -163,7 +161,6 @@
         try { if (localStorage.getItem("timetable-language") === "en") currentLanguage = "en"; } catch {}
 
         window.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("app-version").textContent = "Ver." + APP_VERSION;
             switchLanguage(currentLanguage);
         });
         function switchDirection(dir) {
